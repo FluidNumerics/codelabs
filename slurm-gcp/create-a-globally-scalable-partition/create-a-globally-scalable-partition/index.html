@@ -1,0 +1,275 @@
+
+<!doctype html>
+
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+  <meta name="theme-color" content="#4F7DC9">
+  <meta charset="UTF-8">
+  <title>Create a globally scalable (multi-region) compute partition with Fluid Numerics&#39; Slurm-GCP</title>
+  <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+  <link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://storage.googleapis.com/codelab-elements/codelab-elements.css">
+  <style>
+    .success {
+      color: #1e8e3e;
+    }
+    .error {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+  <google-codelab codelab-gaid="UA-125720260-6"
+                  id="create-a-globally-scalable-partition"
+                  title="Create a globally scalable (multi-region) compute partition with Fluid Numerics&#39; Slurm-GCP"
+                  environment="web"
+                  feedback-link="https://forms.gle/q5HaN43HyVXLSLmM9">
+    
+      <google-codelab-step label="Introduction" duration="0">
+        <p class="image-container"><img style="width: 148.50px" src="img/b095befab07633f0.png"></p>
+<p><strong>Last Updated:</strong> 2020-07-27</p>
+<p>In this article, we assume that you have already completed the <a href="https://fluid-slurm-gcp-codelabs.web.app/create-a-hpc-cluster-on-gcp/#0" target="_blank">&#34;Create a HPC Cluster on Google Cloud Platform&#34; codelab</a> and have an existing fluid-slurm-gcp cluster.</p>
+<h2 is-upgraded><strong>Use case for multi-region cluster configurations on Google Cloud Platform</strong></h2>
+<p>Some applications and algorithms in high performance computing exhibit near perfect <a href="https://hpc-wiki.info/hpc/Scaling_tests#Weak_Scaling" target="_blank">weak scaling</a> and processes are independent requiring no inter-communication. This is typical of workflows where a large number of serial or multi-threaded applications are launched to independently process data (e.g. images and video, numerical simulation output, environmental data). This type of work is also known as high throughput computing (HTC).</p>
+<p>For some HTC workloads, you may find yourself needing to pool resources across multiple GCP regions to keep pace with data inflow rates. Additionally, having compute resources available across multiple regions further protects you from interruptions caused by service failures that can occur in a single GCP zone or region.</p>
+<p>In this introductory section of the codelab, we will cover the basics of GCP regions and zones. We&#39;ll then use this information to design a compute partition configuration that is globally scalable. In the following sections, we will walk you through implementing this globally scalable design with <a href="https://console.cloud.google.com/marketplace/details/fluid-cluster-ops/fluid-slurm-gcp?utm_source=joe&utm_medium=codelab&utm_campaign=codelabs&utm_content=multiproject_codelabs" target="_blank">fluid-slurm-gcp</a>.</p>
+<h3 is-upgraded><strong>Regions, Zones, and Subnets</strong></h3>
+<p>Google Cloud Platform (GCP) offers on-demand access to <a href="https://cloud.google.com/about/locations" target="_blank">compute, storage, and networking resources worldwide</a>. A region is a specific geographical location where you can host your resources. Each region has one or more zones that correspond to distinct data-centers in that geographical location. As an example, europe-west1-a and europe-west1-b are two different zones in the europe-west1 region. Geographically, europe-west1 is located in St. Ghislain, Belgium.</p>
+<p>From <a href="https://cloud.google.com/compute/docs/regions-zones" target="_blank">Google Cloud&#39;s Compute Engine documentation</a> : </p>
+<p>&#34;Putting resources in different zones in a region provides isolation from most types of physical infrastructure and infrastructure software service failures. Putting resources in different regions provides an even higher degree of failure independence. This allows you to design robust systems with resources spread across different failure domains.&#34;</p>
+<p><a href="https://cloud.google.com/vpc/docs/vpc" target="_blank">Virtual Private Cloud (VPC) networks</a> provide connectivity between compute instances, GCP services, and 3rd party system. Subnetworks are regional resources. This means that, for each region you wish to deploy compute instances, you will need a subnetwork defined in that region. Traffic between subnetworks and on-premise systems is controlled by <a href="https://cloud.google.com/vpc/docs/vpc#firewall_rules" target="_blank">network firewall rules</a>.</p>
+<p>GCP projects come with a <a href="https://cloud.google.com/vpc/docs/vpc#default-network" target="_blank">default network</a> with<a href="https://cloud.google.com/vpc/docs/firewalls#more_rules_default_vpc" target="_blank"> pre-populated firewall rules</a> and a subnetwork for each region.</p>
+<h3 is-upgraded><strong>Infrastructure</strong></h3>
+<p>Fluid-slurm-gcp provides a schema that you can use to describe what machines you want to use on GCP, which regions and zones to deploy them in, and what partitions in slurm to align them with. This allows you to have identical machines spread across multiple region in a single globally scalable compute partition.</p>
+<h2 is-upgraded><img style="width: 624.00px" src="img/6d5c85d43bf4520f.png"></h2>
+<p>This schematic provides an example of a fluid-slurm-gcp deployment in the us-west-1 and europe-west-1 regions (The Dalles, Oregon, USA and St. Ghislain, Belgium). The login and controller instances reside in a single zone of us-west-1. </p>
+<p>The compute partition (called &#34;globally-scalable&#34;) has two sets of machines : <code>compute-us-w1-b-*</code> and <code>compute-eu-w1-b-*</code>. Each machine set is deployed in their own subnetwork corresponding to the region they will be deployed to. In this configuration, users can submit jobs to the globally-scalable partition and the Slurm job scheduler will schedule jobs to run in any of these regions.</p>
+<h2 is-upgraded><strong>What you will build</strong></h2>
+<p>In this codelab, you are going to configure a globally scalable (multi-region) compute partition on an existing fluid-slurm-gcp HPC cluster on Google Cloud Platform.</p>
+<aside class="warning"><p><strong>Note: </strong><a href="https://cloud.google.com/products/calculator/#id=5df12891-6c50-4d3f-97b9-c483439af101" target="_blank">This tutorial is estimated to cost $2.09 on Google Cloud Platform</a> (actual costs may vary)</p>
+</aside>
+<h2 is-upgraded><strong>What you will learn</strong></h2>
+<ul>
+<li>Basics of the cluster-config schema</li>
+<li>Basics of cluster-services</li>
+<li>How to create a globally scalable (multi-region) compute partition</li>
+</ul>
+<h2 is-upgraded><strong>What you will need</strong></h2>
+<ul>
+<li><a href="https://gsuite.google.com/" target="_blank">GSuite</a>, <a href="https://cloud.google.com/identity" target="_blank">Cloud Identity</a>, or <a href="https://www.google.com/gmail/" target="_blank">Gmail Account</a></li>
+<li><a href="https://cloud.google.com/resource-manager/docs/creating-managing-projects" target="_blank">Google Cloud Platform Project with Billing enabled</a></li>
+<li>An existing fluid-slurm-gcp deployment</li>
+<li>Project owner, Compute OS Admin Login, and Service Account User roles for your account on your GCP Project</li>
+<li><a href="https://cloud.google.com/compute/quotas" target="_blank">Sufficient Compute Engine Quota</a> in two GCP regions</li>
+<li>Basic Command-Line Linux Experience</li>
+</ul>
+<aside class="warning"><p><strong>Note:</strong> If you do not have an existing fluid-slurm-gcp deployment, we recommend that you first complete the codelab : <a href="https://codelabs.fluidnumerics.com/create-a-hpc-cluster-on-gcp" target="_blank">&#34;Create a HPC Cluster on Google Cloud Platform&#34;</a></p>
+</aside>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Create a cluster configuration file" duration="5">
+        <p>Fluid-slurm-gcp comes with a command-line tool called <a href="https://help.fluidnumerics.com/slurm-gcp/documentation/cluster-services-cli" target="_blank"><code>cluster-services</code></a> that is used to manage available compute nodes, compute partitions, Slurm user accounting, and network attached storage. You can update your cluster configuration by providing <code>cluster-services</code> a .yaml file that defines a <a href="https://help.fluidnumerics.com/slurm-gcp/documentation/cluster-services-cli/cluster-configuration-schema" target="_blank">valid cluster configuration</a>. By default, cluster-services looks for a cluster configuration file in <code>/apps/cls/etc/cluster-config.yaml</code> . Alternatively, you can use <code>cluster-services</code> to report your current cluster configuration that you can then modify. </p>
+<p>Modifying compute partitions must be done on the controller instance of your cluster with root privileges. This is required, since the <a href="https://slurm.schedmd.com/quickstart_admin.html" target="_blank">Slurm controller daemon</a> is restarted when partitions are modified to allow the changes to take effect.</p>
+<iframe class="youtube-video" src="https://www.youtube.com/embed/Ezyp3A3Pe80?rel=0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<p>In this section, you will use cluster-services to create a valid cluster configuration yaml that you will modify in the next section.</p>
+<ol type="1" start="1">
+<li>Navigate to Compute Engine &gt; VM Instances in the Products and Services menu</li>
+</ol>
+<p class="image-container"><img style="width: 408.50px" src="img/df05677e00b182ef.png"></p>
+<ol type="1" start="2">
+<li>Click &#34;SSH&#34; to the right of your controller instance and wait for the terminal on the controller to become active.</li>
+</ol>
+<p class="image-container"><img style="width: 624.00px" src="img/ba69fd9032c558de.png"></p>
+<ol type="1" start="3">
+<li>Generate a cluster-configuration file that describes your current cluster configuration.</li>
+</ol>
+<pre><code>$ sudo su
+[root]# cluster-services list all &gt; config.yaml</code></pre>
+<ol type="1" start="4">
+<li>Open the config.yaml file in either nano, emacs, or vim. The contents of this configuration file are described in detail in <a href="https://help.fluidnumerics.com/slurm-gcp/documentation/cluster-services-cli/cluster-configuration-schema" target="_blank">Fluid Numerics&#39; cluster-config schema documentation</a>. We will focus on the partitions configuration, which begins on line 10</li>
+</ol>
+<pre><code>  1 compute_image: projects/fluid-cluster-ops/global/images/fluid-slurm-gcp-compute-centos-v2-3-0
+  2 compute_service_account: default
+  3 controller:
+  4   project: fluid-slurm-gcp-codelabs
+  5   region: us-west1
+  6   vpc_subnet: https://www.googleapis.com/compute/v1/projects/fluid-slurm-gcp-codelabs/regions/us-west1/subnetworks/default
+  7   zone: us-west1-b
+  8 controller_image: projects/fluid-cluster-ops/global/images/fluid-slurm-gcp-controller-centos-v2-3-0
+  9 controller_service_account: default
+ 10 default_partition: partition-1
+ 11 login:
+ 12 - project: fluid-slurm-gcp-codelabs
+ 13   region: us-west1
+ 14   vpc_subnet: https://www.googleapis.com/compute/v1/projects/fluid-slurm-gcp-codelabs/regions/us-west1/subnetworks/default
+ 15   zone: us-west1-b
+ 16 login_image: projects/fluid-cluster-ops/global/images/fluid-slurm-gcp-login-centos-v2-3-0
+ 17 login_service_account: default
+ 18 mounts: []
+ 19 munge_key: &#39;&#39;
+ 20 name: fluid-slurm-gcp-1
+ 21 partitions:
+ 22 - labels:
+ 23     goog-dm: fluid-slurm-gcp-1
+ 24   machines:
+ 25   - disable_hyperthreading: false
+ 26     disk_size_gb: 15
+ 27     disk_type: pd-standard
+ 28     external_ip: false
+ 29     gpu_count: 0
+ 30     gpu_type: nvidia-tesla-v100
+ 31     image: projects/fluid-cluster-ops/global/images/fluid-slurm-gcp-compute-centos-v2-3-0
+ 32     local_ssd_mount_directory: /scratch
+ 33     machine_type: n1-standard-2
+ 34     max_node_count: 10
+ 35     n_local_ssds: 0
+ 36     name: partition-1
+ 37     preemptible_bursting: false
+ 38     static_node_count: 0
+ 39     vpc_subnet: https://www.googleapis.com/compute/v1/projects/fluid-slurm-gcp-codelabs/regions/us-west1/subnetworks/default
+ 40     zone: us-west1-b
+ 41   max_time: INFINITE
+ 42   name: partition-1
+ 43   project: fluid-slurm-gcp-codelabs
+ 44 slurm_accounts: []
+ 45 slurm_db_host: {}
+ 46 suspend_time: 300
+ 47 tags:
+ 48 - default</code></pre>
+<p>The <code>partitions</code> definition, in this cluster-configuration file, is specified between lines 21-43. The <code>partitions</code> attribute is a list of objects. Each <code>partitions</code> object has the attributes <code>labels</code>, <code>machines</code>, <code>max_time</code>, <code>name</code>, and <code>project</code>. </p>
+<p>The <code>partitions.machines</code> attribute is also a list of objects. Each <code>partitions.machines</code> attribute defines a set of machines that you want to place in the Slurm partition defined by the parent <code>partitions</code> object. Take some time to review the <a href="https://help.fluidnumerics.com/slurm-gcp/documentation/cluster-services-cli/cluster-configuration-schema#h.p_C9K8bMKsoKjr" target="_blank">partitions object schema</a> before moving onto the next section.</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Multi-region configuration" duration="10">
+        <p>At this point, you now have a configuration file, <code>config.yaml</code>, in your home directory. You will now add one more machine set to the first <code>partitions</code> object that define identical machine types in different regions.</p>
+<p>By the end of this section, you will have a globally scalable, multi-region compute partition. We  walk you through building compute partitions that open access to any Google data-center worldwide.</p>
+<p>First, use cluster-services to make the changes to your HPC cluster configuration. We will build from the config.yaml file created in the previous section.</p>
+<h2 is-upgraded><strong>Rename the existing partition and machine set</strong></h2>
+<ol type="1" start="1">
+<li>Open config.yaml (generated in the previous section) in your favorite text editor.</li>
+<li>Change the partition name on line 42 to <code>globally-scalable</code></li>
+</ol>
+<pre><code> 42   name: globally-scalable</code></pre>
+<ol type="1" start="3">
+<li>Change the name of the machines in this partition, on line 36 to <code>compute-w1-b</code></li>
+</ol>
+<pre><code> 36   name: gl-compute-us-w1-b</code></pre>
+<aside class="special"><p><strong>Tip:</strong> This tutorial assumes that your first compute partition was configured for us-west1-b. When naming your compute nodes, choose a name that indicates which region and zone it will be deployed in.</p>
+</aside>
+<h2 is-upgraded><strong>Add machine sets in two additional zones</strong></h2>
+<ol type="1" start="1">
+<li>Copy the <code>machines</code> block in the first-partition specification (lines 25-40) and paste below line 40.</li>
+<li>Modify the second <code>machines</code> block <code>zone</code> to <code>europe-west1-b</code>, <code>vpc_subnet</code> to <code>https://www.googleapis.com/compute/v1/projects/[PROJECT-ID]/regions/europe-west1/subnetworks/default,</code> and <code>name</code> to <code>gl-compute-eu-w1-b</code>.  </li>
+</ol>
+<aside class="warning"><p><strong>Caution: </strong>Replace [PROJECT-ID] with the GCP project ID hosting your default network.</p>
+</aside>
+<p>After completing this step, your machines block should look like the following:</p>
+<pre><code> 25   - disable_hyperthreading: false
+ 26     disk_size_gb: 15
+ 27     disk_type: pd-standard
+ 28     external_ip: false
+ 29     gpu_count: 0
+ 30     gpu_type: nvidia-tesla-v100
+ 31     image: projects/fluid-cluster-ops/global/images/fluid-slurm-gcp-compute-centos-v2-3-0
+ 32     local_ssd_mount_directory: /scratch
+ 33     machine_type: n1-standard-2
+ 34     max_node_count: 2
+ 35     n_local_ssds: 0
+ 36     name: gl-compute-us-w1-b
+ 37     preemptible_bursting: false
+ 38     static_node_count: 0
+ 39     vpc_subnet: https://www.googleapis.com/compute/v1/projects/fluid-slurm-gcp-codelabs/regions/us-west1/subnetworks/default
+ 40     zone: us-west1-b
+ 41   - disable_hyperthreading: false
+ 42     disk_size_gb: 15
+ 43     disk_type: pd-standard
+ 44     external_ip: false
+ 45     gpu_count: 0
+ 46     gpu_type: nvidia-tesla-v100
+ 47     image: projects/fluid-cluster-ops/global/images/fluid-slurm-gcp-compute-centos-v2-3-0
+ 48     local_ssd_mount_directory: /scratch
+ 49     machine_type: n1-standard-2
+ 50     max_node_count: 2
+ 51     n_local_ssds: 0
+ 52     name: gl-compute-eu-w1-b
+ 53     preemptible_bursting: false
+ 54     static_node_count: 0
+ 55     vpc_subnet: https://www.googleapis.com/compute/v1/projects/fluid-slurm-gcp-codelabs/regions/europe-west1/subnetworks/default
+ 56     zone: europe-west1-b</code></pre>
+<ol type="1" start="3">
+<li>Save <code>config.yaml</code> and return to the terminal. </li>
+</ol>
+<h2 is-upgraded><strong>Update your partitions</strong></h2>
+<ol type="1" start="1">
+<li>Use <code>cluster-services</code> to update your cluster-configuration</li>
+</ol>
+<pre><code>[root]# cluster-services update partitions --config=config.yaml --preview
+ ~ default_partition = partition-1 -&gt; globally-scalable
+ ~ partitions[0].machines[0].name = partition-1 -&gt; gl-compute-us-w1-b
+ ~ partitions[0].machines[0].zone = us-west1-c -&gt; us-west1-b
+ + partitions[0].machines[1] = {&#39;disable_hyperthreading&#39;: False, &#39;disk_size_gb&#39;: 15, &#39;disk_type&#39;: &#39;pd-standard&#39;, &#39;external_ip&#39;: False, &#39;gpu_count&#39;: 0, &#39;gpu_type&#39;: &#39;nvidia-tesla-v100&#39;, &#39;image&#39;: &#39;projects/fluid-cluster-ops/global/images/fluid-slurm-gcp-compute-centos-v2-3-0&#39;, &#39;local_ssd_mount_directory&#39;: &#39;/scratch&#39;, &#39;machine_type&#39;: &#39;n1-standard-2&#39;, &#39;max_node_count&#39;: 2, &#39;n_local_ssds&#39;: 0, &#39;name&#39;: &#39;gl-compute-eu-w1-b&#39;, &#39;preemptible_bursting&#39;: False, &#39;static_node_count&#39;: 0, &#39;vpc_subnet&#39;: &#39;https://www.googleapis.com/compute/v1/projects/fluid-shared-vpc-networking/regions/us-west1/subnetworks/fluid-cluster-subnet-usw1&#39;, &#39;zone&#39;: &#39;europe-west1-b&#39;}
+[root]# cluster-services update partitions --config=config.yaml</code></pre>
+<ol type="1" start="2">
+<li>Verify that the partition name is now set to globally-scalable and the two sets of compute instances are available in Slurm</li>
+</ol>
+<pre><code>[root]# sinfo
+PARTITION         AVAIL  TIMELIMIT  NODES  STATE NODELIST
+globally-scalable    up   infinite      4  idle~ gl-compute-us-w1-b-[0-1],gl-compute-eu-w1-b-[0-1]</code></pre>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Test job submission across GCP regions" duration="5">
+        <p>In the last section, you added machines in us-west1-b and europe-west1-b to be available in a Slurm partition. We will now submit a test job that demonstrates that both regions are used in this configuration.</p>
+<aside class="warning"><p><strong>Note:</strong> Before proceeding, make sure that the <code>max_node_count</code> is set to 2 for each <code>partitions.machines</code> set to keep compute costs low for demonstration purposes.</p>
+</aside>
+<ol type="1" start="1">
+<li>Navigate back to your login node&#39;s terminal.</li>
+<li>Use <code>srun</code> to submit a job-step across all 4 nodes in the <code>globally-scalable</code> partition. </li>
+</ol>
+<pre><code>$ srun -N4 --partition=globally-scalable hostname
+gl-compute-us-w1-b-1
+gl-compute-us-w1-b-0
+gl-compute-eu-w1-b-1
+gl-compute-eu-w1-b-0</code></pre>
+<p>It can take anywhere from 1-3 minutes for the nodes to respond with the hostname. When communicating between GCP regions, there is increased network latency between instances. If you monitor the Compute Engine UI, you will be able to see the compute nodes becoming live in us-west1-b (The Dalles, Oregon, USA) and europe-west1-b (St. Ghislain, Belgium)</p>
+<p class="image-container"><img style="width: 624.00px" src="img/67ec296b0128c670.png"></p>
+<p>Congratulations! You  have just created and tested a globally scalable HPC computing partition on Google Cloud Platform!</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Congratulations" duration="0">
+        <p>In this codelab, you</p>
+<ul>
+<li>Created a valid cluster-configuration file and modified it to customize your cluster</li>
+<li>Configured and tested a multi-region (globally scalable) compute partition</li>
+</ul>
+<h2 is-upgraded><strong>What&#39;s next?</strong></h2>
+<p><a href="https://codelabs.fluidnumerics.com/create-a-high-availability-compute-partition" target="_blank">Learn how to configure a high availability compute partition (multi-zone)</a></p>
+<p><a href="https://docs.google.com/forms/d/e/1FAIpQLSd7EN_ptBOJ9Eg2vH-Bs95j8pD2sjaTAwdcLoWDBVmF0fVEfg/viewform?usp=sf_link" target="_blank">Submit your feedback and request new codelabs using our feedback form</a></p>
+<h2 is-upgraded><strong>Further reading</strong></h2>
+<p><a href="https://cloud.google.com/compute/docs/instances/managing-instance-access" target="_blank">Learn how to configure OS-Login to ssh to your cluster with 3rd party ssh tools</a></p>
+<p><a href="https://cloud.google.com/compute/docs/oslogin/manage-oslogin-in-an-org" target="_blank">Learn how to manage POSIX user information with the directory API</a></p>
+<h2 is-upgraded><strong>Reference docs</strong></h2>
+<p><a href="https://help.fluidnumerics.com/slurm-gcp" target="_blank">https://help.fluidnumerics.com/slurm-gcp</a></p>
+
+
+      </google-codelab-step>
+    
+  </google-codelab>
+
+  <script src="https://storage.googleapis.com/codelab-elements/native-shim.js"></script>
+  <script src="https://storage.googleapis.com/codelab-elements/custom-elements.min.js"></script>
+  <script src="https://storage.googleapis.com/codelab-elements/prettify.js"></script>
+  <script src="https://storage.googleapis.com/codelab-elements/codelab-elements.js"></script>
+  <script src="//support.google.com/inapp/api.js"></script>
+
+</body>
+</html>
