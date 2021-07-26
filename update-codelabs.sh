@@ -11,5 +11,6 @@ while read l; do
 	if [ -d "$app/$path" ]; then
 		rm -rf $app/$path
 	fi
-	mv $subdir $app/
+	mkdir -p $app/$subdir
+	mv $subdir $app/$subdir
 done <docs.txt 
