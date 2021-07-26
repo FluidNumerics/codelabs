@@ -1,2 +1,2 @@
-globally-scalable-slurm-gcp : 10fjU3rVV4R_8EhcfSaX8lGG3opRXRMj4hrNwqgFSgIs
-create-a-research-computing-cluster-on-google-cloud : 1xWpG1hyijOvledxb6r0ckmU1LmxEfxPFbuan6WPgzM8
+slurm-gcp : globally-scalable-slurm-gcp : 10fjU3rVV4R_8EhcfSaX8lGG3opRXRMj4hrNwqgFSgIs
+slurm-gcp : create-a-research-computing-cluster-on-google-cloud : 1xWpG1hyijOvledxb6r0ckmU1LmxEfxPFbuan6WPgzM8
