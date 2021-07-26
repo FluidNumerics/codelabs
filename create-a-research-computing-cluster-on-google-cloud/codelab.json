@@ -1,0 +1,26 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2021-07-26T20:27:47Z",
+  "id": "create-a-research-computing-cluster-on-google-cloud",
+  "duration": 21,
+  "title": "Create a Research Computing Cluster on Google Cloud",
+  "authors": "Joseph Schoonover",
+  "summary": "This codelab will walk you through deploying a cloud-native scalable and flexible research computing cluster on Google Cloud Platform using Fluid Numerics' Slurm-GCP (fluid-slurm-gcp) marketplace solution.",
+  "source": "1xWpG1hyijOvledxb6r0ckmU1LmxEfxPFbuan6WPgzM8",
+  "theme": "hpc",
+  "status": [
+    "published"
+  ],
+  "category": [
+    "hpc"
+  ],
+  "tags": [
+    "web"
+  ],
+  "feedback": "https://forms.gle/q5HaN43HyVXLSLmM9",
+  "ga": "UA-125720260-6",
+  "url": "create-a-research-computing-cluster-on-google-cloud"
+}
