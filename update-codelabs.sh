@@ -12,7 +12,7 @@ while read l; do
 	if [ -d "$app/$subdir" ]; then
 		rm -rf $app/$subdir
 	fi
-	mkdir -p $app/$subdir
-	mv $subdir $app/$subdir
+	#mkdir -p $app/$subdir
+	mv $subdir/ $app/
 
 done <docs.txt 
