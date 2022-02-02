@@ -1,0 +1,26 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2022-02-02T18:25:35Z",
+  "id": "cloud-cfd/run-openfoam-on-gcp-with-cloud-cfd",
+  "duration": 20,
+  "title": "Run OpenFOAM® on GCP with Cloud CFD",
+  "authors": "Joseph Schoonover",
+  "summary": "This codelab will walk you through running OpenFOAM® on Google Cloud Platform using the Cloud CFD solution.",
+  "source": "1d1HSwOqp_26tL161CwylVUGXfFmBzgrz93-20jQExNk",
+  "theme": "hpc",
+  "status": [
+    "published"
+  ],
+  "category": [
+    "HPC"
+  ],
+  "tags": [
+    "web"
+  ],
+  "feedback": "https://forms.gle/q5HaN43HyVXLSLmM9",
+  "ga": "UA-125720260-6",
+  "url": "cloud-cfd/run-openfoam-on-gcp-with-cloud-cfd"
+}

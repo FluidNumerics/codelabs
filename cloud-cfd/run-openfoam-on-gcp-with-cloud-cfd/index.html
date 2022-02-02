@@ -1,0 +1,190 @@
+
+<!doctype html>
+
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+  <meta name="theme-color" content="#4F7DC9">
+  <meta charset="UTF-8">
+  <title>Run OpenFOAM® on GCP with Cloud CFD</title>
+  <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+  <link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://storage.googleapis.com/codelab-elements/codelab-elements.css">
+  <style>
+    .success {
+      color: #1e8e3e;
+    }
+    .error {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+  <google-codelab codelab-gaid="UA-125720260-6"
+                  id="cloud-cfd/run-openfoam-on-gcp-with-cloud-cfd"
+                  title="Run OpenFOAM® on GCP with Cloud CFD"
+                  environment="web"
+                  feedback-link="https://forms.gle/q5HaN43HyVXLSLmM9">
+    
+      <google-codelab-step label="Introduction" duration="0">
+        <p><strong>Last Updated:</strong> 2020-11-04</p>
+<h2 is-upgraded><strong>What you will build</strong></h2>
+<p>In this codelab, you are going to deploy an auto-scaling HPC cluster on Google Cloud that comes with OpenFOAM®, Paraview, and mesh generation tools. You will use this infrastructure to simulate compressible flow past a NACA0012 aerofoil with OpenFOAM®.</p>
+<h2 is-upgraded><strong>What you will learn</strong></h2>
+<ul>
+<li>How to configure Identity and Access Management (IAM) policies for operating an HPC cluster on Google Cloud Platform</li>
+<li>How to deploy a cloud-native HPC cluster with the Slurm job scheduler</li>
+<li>How to set up basic Slurm accounting with Fluid Numerics&#39; cluster-services</li>
+<li>How to run OpenFOAM® in parallel on Google Cloud Platform using a Slurm batch job</li>
+</ul>
+<h2 is-upgraded><strong>What you will need</strong></h2>
+<ul>
+<li><a href="https://gsuite.google.com/" target="_blank">GSuite</a>, <a href="https://cloud.google.com/identity" target="_blank">Cloud Identity</a>, or <a href="https://www.google.com/gmail/" target="_blank">Gmail Account</a> with <a href="https://cloud.google.com/compute/docs/instances/managing-instance-access#add_oslogin_keys" target="_blank">an SSH key attached</a></li>
+<li><a href="https://cloud.google.com/resource-manager/docs/creating-managing-projects" target="_blank">Google Cloud Platform Project with Billing enabled</a></li>
+<li>Project owner role on your GCP Project</li>
+<li><a href="https://cloud.google.com/compute/quotas" target="_blank">Sufficient Compute Engine Quota</a> (24 vCPUs and 100 GB PD-Standard Disk)</li>
+</ul>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Configure IAM" duration="5">
+        <h2 is-upgraded>Set IAM Policies</h2>
+<p>In HPC, there are clear distinctions between system administrators and system users. System administrators generally have &#34;root access&#34; enabling them to manage and operate compute resources. System users are generally researchers, scientists, and application engineers that only need to leverage the resources to execute jobs.</p>
+<p>On Google Cloud Platform, the <a href="https://cloud.google.com/compute/docs/oslogin/" target="_blank">OS Login API</a> provisions POSIX user information from GSuite, Cloud Identity, and Gmail accounts. Additionally, OS Login integrates with GCP&#39;s <a href="https://cloud.google.com/iam" target="_blank">Identity and Access Management (IAM)</a> system to determine if users should be allowed to escalate privileges on Linux systems.</p>
+<p>In this tutorial, we assume you are filling the system administrator and compute engine administrator roles. We will configure IAM policies to give you sufficient permissions to accomplish the following tasks </p>
+<ul>
+<li>Create/Delete Google Compute Engine (GCE) VM instances</li>
+<li>SSH into GCE VM instances</li>
+<li>Escalate privileges on GCE VM instances</li>
+</ul>
+<p class="image-container"><img style="width: 516.50px" src="img/74e3b6764c32a120.png"></p>
+<p>To give yourself the necessary IAM roles to complete this tutorial</p>
+<ol type="1" start="1">
+<li>Navigate to IAM &amp; Admin &gt; IAM in the Products and Services menu. </li>
+<li>Click &#34;+Add&#34; near the top of the page. </li>
+<li>Type in your GSuite account, Cloud Identity Account, or Gmail account under &#34;Members&#34;</li>
+</ol>
+<ol type="1" start="1">
+<li>Add the following roles :  Compute Admin, Compute OS Admin Login, and Service Account User</li>
+</ol>
+<ol type="1" start="4">
+<li>Click Save</li>
+</ol>
+<aside class="warning"><p><strong>Caution:</strong> If you plan to use third-party SSH (e.g. OpenSSH) to connect to your cluster, be sure you attach an ssh key to your cloud identity profile using OS Login. You can find more information at <a href="https://cloud.google.com/compute/docs/instances/managing-instance-access#add_oslogin_keys" target="_blank">https://cloud.google.com/compute/docs/instances/managing-instance-access#add_oslogin_keys</a> </p>
+</aside>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Deploy Cloud CFD from the GCP Marketplace" duration="5">
+        <p>In this section, you will deploy the Cloud CFD solution, an auto-scaling HPC cluster with the Slurm job scheduler and software that supports computational fluid dynamics workflows, including OpenFOAM®.</p>
+<ol type="1" start="1">
+<li>Open <a href="https://console.cloud.google.com/marketplace/details/fluid-cluster-ops/cloud-cfd" target="_blank">https://console.cloud.google.com/marketplace/details/fluid-cluster-ops/cloud-cfd</a>.</li>
+<li>Click &#34;Launch&#34;</li>
+<li>Give the deployment a name (e.g. OpenFOAM®-demo) and select the GCP zone where you want to deploy your cluster.<br><br>https://console.cloud.google.com/marketplace/details/fluid-cluster-ops/cloud-cfd<img style="width: 569.00px" src="img/91a06352d1dd7696.png"></li>
+<li>Leave the Controller and Login settings at their default settings.<img style="width: 579.00px" src="img/b9abb8d65ebc1196.png"></li>
+<li>In the Partition Configuration section, set the OpenFOAM® Machine Type to `n1-standard-8`.<img style="width: 576.00px" src="img/8612ecbff2d280ed.png"></li>
+<li>Click &#34;Deploy&#34; and wait for the cluster to be created.</li>
+</ol>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Configure Slurm Accounting" duration="5">
+        <p>In this section, we will access the cluster&#39;s login node to configure Slurm accounting, so that you can submit jobs using the Slurm job scheduler.</p>
+<ol type="1" start="1">
+<li>SSH into the cluster&#39;s login node</li>
+<li>Go root</li>
+</ol>
+<pre><code>sudo su</code></pre>
+<ol type="1" start="3">
+<li>Create a cluster-configuration file using cluster-services.</li>
+</ol>
+<pre><code>cluster-services list all &gt; config.yaml</code></pre>
+<ol type="1" start="4">
+<li>Append a sample slurm_accounts block to the end of the <code>config.yaml</code> file. </li>
+</ol>
+<pre><code>cluster-services sample slurm_accounts &gt;&gt; config.yaml</code></pre>
+<ol type="1" start="5">
+<li>Edit the cluster-configuration file so that you are allowed to submit to the <code>openfoam</code> partition. Make sure you remove the empty <code>slurm_accounts: []</code> that is pre-populated in the cluster-configuration file.<br>The example <code>slurm_account</code> configuration below will create a Slurm account called <code>cfd</code> with the user <code>joe</code> added to it. Users in this account will be allowed to submit jobs to the <code>meshing</code>, <code>openfoam</code>, and <code>paraview</code> partitions.</li>
+</ol>
+<pre><code>slurm_accounts:
+  - allowed_partitions:
+- meshing
+- openfoam
+- paraview
+    name: cfd
+    users:
+- joe</code></pre>
+<ol type="1" start="6">
+<li>Preview the changes for updating the <code>slurm_accounts</code>. Verify that you have entered in the Slurm accounting information correctly.</li>
+</ol>
+<pre><code>cluster-services update slurm_accounts --config=config.yaml --preview</code></pre>
+<ol type="1" start="7">
+<li>Apply the changes.</li>
+</ol>
+<pre><code>cluster-services update slurm_accounts --config=config.yaml </code></pre>
+<ol type="1" start="8">
+<li>Exit from root.</li>
+</ol>
+<pre><code>exit</code></pre>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Run the NACA0012 Example" duration="5">
+        <p>In this section, you will submit a Slurm batch job to run the NACA0012 tutorial included with OpenFOAM®. To help you with this, the Cloud CFD solution comes with an example Slurm batch script (<code>/apps/share/openfoam.slurm</code>). This example batch script can also be used as a starting point for other OpenFOAM® jobs on the cluster.</p>
+<ol type="1" start="1">
+<li>From the cluster&#39;s login node, copy the example Slurm batch script to your home directory.</li>
+</ol>
+<pre><code>cp /apps/share/openfoam.slurm ./</code></pre>
+<ol type="1" start="2">
+<li>Open the Slurm batch script in a text editor. Set the <code>--account</code> parameter to the Slurm account name that you set in step 5 from the previous section of this codelab. Save the file when you are done and exit the text editor.</li>
+</ol>
+<pre><code>#SBATCH --account=cfd</code></pre>
+<ol type="1" start="3">
+<li>Submit the batch job using sbatch.</li>
+</ol>
+<pre><code>sbatch openfoam.slurm</code></pre>
+<ol type="1" start="4">
+<li>Wait for the job to complete.<br></li>
+</ol>
+<aside class="special"><p><strong>Note:</strong> Compute nodes are created as needed when jobs are submitted. For this first job submission, it can take up to 3 minutes for the job to start.</p>
+</aside>
+<p>When the job completes, you will have the <code>aerofoilNACA0012</code> OpenFOAM® simulation case directory in your home directory.</p>
+<pre><code>ls aerofoilNACA0012/
+0     1050  1200  1350  150  300  450  550  700  850  Allclean  dynamicCode      log.transformPoints  processor1  processor4  processor7
+100   1100  1250  1400  200  350  50   600  750  900  Allrun    log.blockMesh    postProcessing       processor2  processor5  system
+1000  1150  1300  1410  250  400  500  650  800  950  constant  log.extrudeMesh  processor0           processor3  processor6</code></pre>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Congratulations" duration="0">
+        <p>In this codelab, you created an auto-scaling, cloud-native HPC cluster and ran a parallel OpenFOAM® simulation on Google Cloud Platform!</p>
+<h2 is-upgraded><strong>Further reading</strong></h2>
+<ul>
+<li><a href="https://fluid-slurm-gcp-codelabs.web.app/connect-to-paraview-server-on-gcp-with-cloud-cfd/index.html#0" target="_blank">Learn how to connect your Cloud CFD cluster to your local Paraview client for post-processing and data visualization.</a></li>
+<li><a href="http://codelabs.fluidnumerics.com/create-a-high-availability-compute-partition" target="_blank">Learn how to configure a high availability compute partition (multi-zone)</a></li>
+<li><a href="http://codelabs.fluidnumerics.com/create-a-globally-scalable-compute-partition" target="_blank">Learn how to configure a globally scalable compute partition (multi-region)</a></li>
+<li><a href="https://cloud.google.com/compute/docs/instances/managing-instance-access" target="_blank">Learn how to configure OS-Login to ssh to your cluster with 3rd party ssh tools</a></li>
+<li><a href="https://cloud.google.com/compute/docs/oslogin/manage-oslogin-in-an-org" target="_blank">Learn how to manage POSIX user information with the directory API</a></li>
+<li><a href="https://help.fluidnumerics.com/cfd-gcp" target="_blank">https://help.fluidnumerics.com/Cloud CFD</a></li>
+</ul>
+<h2 is-upgraded><a href="https://docs.google.com/forms/d/e/1FAIpQLSd7EN_ptBOJ9Eg2vH-Bs95j8pD2sjaTAwdcLoWDBVmF0fVEfg/viewform?usp=sf_link" target="_blank">Tell us your feedback</a></h2>
+
+
+      </google-codelab-step>
+    
+  </google-codelab>
+
+  <script src="https://storage.googleapis.com/codelab-elements/native-shim.js"></script>
+  <script src="https://storage.googleapis.com/codelab-elements/custom-elements.min.js"></script>
+  <script src="https://storage.googleapis.com/codelab-elements/prettify.js"></script>
+  <script src="https://storage.googleapis.com/codelab-elements/codelab-elements.js"></script>
+  <script src="//support.google.com/inapp/api.js"></script>
+
+</body>
+</html>

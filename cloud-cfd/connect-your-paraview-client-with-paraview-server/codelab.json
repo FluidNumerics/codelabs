@@ -1,0 +1,26 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2022-02-02T18:33:52Z",
+  "id": "cloud-cfd/connect-your-paraview-client-with-paraview-server",
+  "duration": 30,
+  "title": "Connect your Paraview Client with Paraview Server on Cloud CFD",
+  "authors": "Joseph Schoonover",
+  "summary": "This codelab will walk you through connecting your local Paraview client with Paraview server deployed to ephemeral compute nodes on the Cloud CFD solution.",
+  "source": "16xI13wE6qLQThoblSeD8HlCh1ZQqjPZNW-7KOvGqLKQ",
+  "theme": "hpc",
+  "status": [
+    "published"
+  ],
+  "category": [
+    "HPC"
+  ],
+  "tags": [
+    "web"
+  ],
+  "feedback": "https://forms.gle/q5HaN43HyVXLSLmM9",
+  "ga": "UA-125720260-6",
+  "url": "cloud-cfd/connect-your-paraview-client-with-paraview-server"
+}

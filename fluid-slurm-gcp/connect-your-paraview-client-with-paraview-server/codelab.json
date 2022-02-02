@@ -1,0 +1,26 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2022-02-02T18:33:33Z",
+  "id": "fluid-slurm-gcp/connect-your-paraview-client-with-paraview-server",
+  "duration": 45,
+  "title": "Connect your Paraview Client with Paraview Server on Fluid-Slurm-GCP",
+  "authors": "Joseph Schoonover",
+  "summary": "This codelab will walk you through connecting your local Paraview client with Paraview server deployed to ephemeral compute nodes on the Fluid-Slurm-GCP solution.",
+  "source": "1IWJbl7nadNIP32nDNOeGpe7eBs6GrXA-vG6sTpsxwX0",
+  "theme": "hpc",
+  "status": [
+    "published"
+  ],
+  "category": [
+    "HPC"
+  ],
+  "tags": [
+    "web"
+  ],
+  "feedback": "https://forms.gle/q5HaN43HyVXLSLmM9",
+  "ga": "UA-125720260-6",
+  "url": "fluid-slurm-gcp/connect-your-paraview-client-with-paraview-server"
+}

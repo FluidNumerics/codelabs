@@ -1,0 +1,297 @@
+
+<!doctype html>
+
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+  <meta name="theme-color" content="#4F7DC9">
+  <meta charset="UTF-8">
+  <title>Connect your Paraview Client with Paraview Server on Fluid-Slurm-GCP</title>
+  <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+  <link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://storage.googleapis.com/codelab-elements/codelab-elements.css">
+  <style>
+    .success {
+      color: #1e8e3e;
+    }
+    .error {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+  <google-codelab codelab-gaid="UA-125720260-6"
+                  id="fluid-slurm-gcp/connect-your-paraview-client-with-paraview-server"
+                  title="Connect your Paraview Client with Paraview Server on Fluid-Slurm-GCP"
+                  environment="web"
+                  feedback-link="https://forms.gle/q5HaN43HyVXLSLmM9">
+    
+      <google-codelab-step label="Introduction" duration="0">
+        <p><strong>Last Updated:</strong> 2020-11-05</p>
+<h2 is-upgraded><strong>What you will build</strong></h2>
+<p>In this codelab, you are going to deploy an auto-scaling HPC cluster on Google Cloud that comes with the Slurm job scheduler. You will customize this system to deploy compute nodes with Paraview and then use this infrastructure to connect your local Paraview client with Paraview server deployed on ephemeral compute nodes on Fluid-Slurm-GCP. </p>
+<p>This setup will allow you to leverage Google Cloud Platform as a Paraview render farm for visualization and post-processing of scientific data.</p>
+<h2 is-upgraded><strong>What you will learn</strong></h2>
+<ul>
+<li>How to configure Identity and Access Management (IAM) policies for operating an HPC cluster on Google Cloud Platform</li>
+<li>How to deploy a cloud-native HPC cluster with the Slurm job scheduler</li>
+<li>How to set up basic Slurm accounting with Fluid Numerics&#39; cluster-services</li>
+<li>How to connect your local Paraview Client to Paraview server deployed to auto-scaling compute nodes on Google Cloud Platform.</li>
+</ul>
+<h2 is-upgraded><strong>What you will need</strong></h2>
+<ul>
+<li><a href="https://gsuite.google.com/" target="_blank">GSuite</a>, <a href="https://cloud.google.com/identity" target="_blank">Cloud Identity</a>, or <a href="https://www.google.com/gmail/" target="_blank">Gmail Account</a></li>
+<li><a href="https://cloud.google.com/resource-manager/docs/creating-managing-projects" target="_blank">Google Cloud Platform Project with Billing enabled</a></li>
+<li>Project owner role on your GCP Project</li>
+<li><a href="https://cloud.google.com/compute/quotas" target="_blank">Sufficient Compute Engine Quota</a> (24 vCPUs and 100 GB PD-Standard Disk)</li>
+<li><a href="https://www.paraview.org/download/" target="_blank">Paraview 5.8.0</a></li>
+</ul>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Configure IAM" duration="5">
+        <h2 is-upgraded>Set IAM Policies</h2>
+<p>In HPC, there are clear distinctions between system administrators and system users. System administrators generally have &#34;root access&#34; enabling them to manage and operate compute resources. System users are generally researchers, scientists, and application engineers that only need to leverage the resources to execute jobs.</p>
+<p>On Google Cloud Platform, the <a href="https://cloud.google.com/compute/docs/oslogin/" target="_blank">OS Login API</a> provisions POSIX user information from GSuite, Cloud Identity, and Gmail accounts. Additionally, OS Login integrates with GCP&#39;s <a href="https://cloud.google.com/iam" target="_blank">Identity and Access Management (IAM)</a> system to determine if users should be allowed to escalate privileges on Linux systems.</p>
+<p>In this tutorial, we assume you are filling the system administrator and compute engine administrator roles. We will configure IAM policies to give you sufficient permissions to accomplish the following tasks </p>
+<ul>
+<li>Create/Delete Google Compute Engine (GCE) VM instances</li>
+<li>SSH into GCE VM instances</li>
+<li>Escalate privileges on GCE VM instances</li>
+</ul>
+<p class="image-container"><img style="width: 516.50px" src="img/74e3b6764c32a120.png"></p>
+<p>To give yourself the necessary IAM roles to complete this tutorial</p>
+<ol type="1" start="1">
+<li>Navigate to IAM &amp; Admin &gt; IAM in the Products and Services menu. </li>
+<li>Click &#34;+Add&#34; near the top of the page. </li>
+<li>Type in your GSuite account, Cloud Identity Account, or Gmail account under &#34;Members&#34;</li>
+<li>Add the following roles :  Compute Admin, Compute OS Admin Login, and Service Account User</li>
+<li>Click Save</li>
+</ol>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Configure Firewall Rules" duration="5">
+        <p>In this section you will configure your firewall rules in Google Cloud Platform to permit a reverse SSH connection from Paraview server to your local Paraview Client.</p>
+<ol type="1" start="1">
+<li><a href="https://console.cloud.google.com/networking/firewalls/list" target="_blank">Open your VPC Network Firewall Settings in Google Cloud</a>.</li>
+<li>Click on &#34;Create Firewall Rule&#34;<img style="width: 624.00px" src="img/7c63869183a9cb73.png"></li>
+<li>Set the Firewall Rule Name to &#34;allow-pvserver-tcp&#34;<img style="width: 624.00px" src="img/51ca1b31c38ab90e.png"></li>
+<li>Set the Targets to &#34;All instances in the network&#34;<img style="width: 624.00px" src="img/211a0540313c6fc2.png"></li>
+<li>For the Source IP Ranges, add <a href="https://www.whatismyip.com/" target="_blank">your external IPv4 Address</a></li>
+<li>For the Ports and Protocols, check the box next to &#34;tcp&#34; and set the port to 11000<img style="width: 624.00px" src="img/aa880639f7d6b0a3.png"></li>
+<li>Click Create.</li>
+</ol>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Deploy Fluid-Slurm-GCP from the GCP Marketplace" duration="5">
+        <p>In this section, you will deploy the Fluid-Slurm-GCP solution, an auto-scaling HPC cluster with the Slurm job scheduler and software that supports computational fluid dynamics workflows, including Paraview.</p>
+<ol type="1" start="1">
+<li>Open <a href="https://console.cloud.google.com/marketplace/details/fluid-cluster-ops/cfd-gcp" target="_blank">https://console.cloud.google.com/marketplace/details/fluid-cluster-ops/cfd-gcp</a>.</li>
+<li>Click &#34;Launch&#34;</li>
+<li>Give the deployment a name (e.g. paraview-demo) and select the GCP zone where you want to deploy your cluster.<br><br><img style="width: 561.00px" src="img/a67007e5c8fba30a.png"></li>
+<li>Leave the Controller and Login settings at their default settings.<img style="width: 579.00px" src="img/b9abb8d65ebc1196.png"></li>
+<li>In the Partition Configuration section, set the partition name to ‘paraview&#39;, the Machine Type to `n1-standard-8`, and the Disk Size to 50 GB.<img style="width: 592.00px" src="img/2c79e1171bedb016.png"></li>
+<li>Click &#34;Deploy&#34; and wait for the cluster to be created.</li>
+</ol>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Configure Slurm Partitions" duration="5">
+        <p>In this section of the codelab, you will configure the paraview partition to use the paraview-gcp image. Note that this image is provided as part of Fluid-Slurm-GCP and is licensed to you under the <a href="https://help.fluidnumerics.com/slurm-gcp/eula" target="_blank">Fluid-Slurm-GCP EULA</a></p>
+<ol type="1" start="1">
+<li>Log in to your cluster controller instance using ssh</li>
+<li>Go root.</li>
+</ol>
+<pre><code>sudo su</code></pre>
+<ol type="1" start="3">
+<li>Create a cluster-configuration file use the <code>cluster-services</code> CLI.</li>
+</ol>
+<pre><code>cluster-services list all &gt; config.yaml</code></pre>
+<ol type="1" start="4">
+<li>Open <code>config.yaml</code> in a text editor and navigate to the <code>partitions[0].machines[0]</code> block. Insert an image definition for the machine block that points to <code>projects/fluid-cluster-ops/global/images/paraview-gcp</code> . Your machine block should look similar to the example block below.</li>
+</ol>
+<pre><code>  machines:
+  - disable_hyperthreading: false
+    disk_size_gb: 50
+    disk_type: pd-standard
+    external_ip: false
+    gpu_count: 0
+    gpu_type: nvidia-tesla-p4
+    image: projects/fluid-cluster-ops/global/images/paraview-gcp
+    local_ssd_mount_directory: /scratch
+    machine_type: n1-standard-8
+    max_node_count: 10
+    n_local_ssds: 0
+    name: paraview
+    preemptible_bursting: false
+    static_node_count: 0
+    vpc_subnet: https://www.googleapis.com/compute/v1/projects/cloud-hpc-demo/regions/us-west2/subnetworks/default
+    zone: us-west2-c</code></pre>
+<ol type="1" start="5">
+<li>Save the config.yaml file and exit your text editor.</li>
+<li>Use <code>cluster-services</code> to preview the changes to your paraview partition.</li>
+</ol>
+<pre><code>cluster-services update partitions --config=config.yaml --preview</code></pre>
+<ol type="1" start="7">
+<li>Apply the changes.</li>
+</ol>
+<pre><code>cluster-services update partitions --config=config.yaml</code></pre>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Configure Login Node sshd" duration="5">
+        <p>In this section of the codelab, you will configure the login node to permit reverse TCP connections back to your local workstation.</p>
+<ol type="1" start="1">
+<li>Use ssh to access your cluster login node</li>
+<li>Go root</li>
+</ol>
+<pre><code>sudo su</code></pre>
+<ol type="1" start="3">
+<li>Open the <code>/etc/ssh/sshd_config</code> in a text editor.</li>
+<li>Add the following line to the bottom of the /etc/ssh/sshd_config file. Save your changes and exit the text editor.</li>
+</ol>
+<pre><code>GatewayPorts yes</code></pre>
+<ol type="1" start="5">
+<li>Restart the sshd service on the login node.</li>
+</ol>
+<pre><code>systemctl restart sshd</code></pre>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Set up Paraview job submission script" duration="5">
+        <p>In this section of the codelab, you will set up a bash script that your Paraview client will use to launch Slurm batch jobs that start Paraview server on compute nodes.</p>
+<ol type="1" start="1">
+<li>Use ssh to access your cluster login node</li>
+<li>Go root</li>
+</ol>
+<pre><code>sudo su</code></pre>
+<ol type="1" start="3">
+<li>Clone the fluid-slurm-gcp_custom-image-bakery repository</li>
+</ol>
+<pre><code>git clone https://github.com/fluidnumerics/fluid-slurm-gcp_custom-image-bakery.git</code></pre>
+<ol type="1" start="4">
+<li>Make a directory under <code>/apps</code> called <code>/share</code></li>
+</ol>
+<pre><code>mkdir /apps/share</code></pre>
+<ol type="1" start="5">
+<li>Copy the <code>submit-paraview.sh</code> script to <code>/apps/share</code></li>
+</ol>
+<pre><code>cp fluid-slurm-gcp_custom-image-bakery/examples/paraview/submit-paraview.sh /apps/share/</code></pre>
+<ol type="1" start="6">
+<li>Exit from root</li>
+</ol>
+<p>exit</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Configure Slurm Accounting" duration="5">
+        <p>In this section, we will access the cluster&#39;s login node to configure Slurm accounting, so that you can submit jobs using the Slurm job scheduler.</p>
+<ol type="1" start="1">
+<li>SSH into the cluster&#39;s login node</li>
+<li>Go root</li>
+</ol>
+<pre><code>sudo su</code></pre>
+<ol type="1" start="3">
+<li>Append a sample slurm_accounts block to the end of the <code>config.yaml</code> file. </li>
+</ol>
+<pre><code>cluster-services sample slurm_accounts &gt;&gt; config.yaml</code></pre>
+<ol type="1" start="4">
+<li>Edit the cluster-configuration file so that you are allowed to submit to the <code>openfoam</code> partition. Make sure you remove the empty <code>slurm_accounts: []</code> that is pre-populated in the cluster-configuration file.<br>The example <code>slurm_account</code> configuration below will create a Slurm account called <code>cfd</code> with the user <code>joe</code> added to it. Users in this account will be allowed to submit jobs to the <code>paraview</code> partition.</li>
+</ol>
+<pre><code>slurm_accounts:
+  - allowed_partitions:
+- paraview
+    name: cfd
+    users:
+- joe</code></pre>
+<ol type="1" start="5">
+<li>Preview the changes for updating the <code>slurm_accounts</code>. Verify that you have entered in the Slurm accounting information correctly.</li>
+</ol>
+<pre><code>cluster-services update slurm_accounts --config=config.yaml --preview</code></pre>
+<ol type="1" start="6">
+<li>Apply the changes.</li>
+</ol>
+<pre><code>cluster-services update slurm_accounts --config=config.yaml </code></pre>
+<ol type="1" start="7">
+<li>Exit from root.</li>
+</ol>
+<pre><code>exit</code></pre>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Connect your Paraview Client to the Cluster" duration="10">
+        <p>In this section, you will use Paraview on your local workstation to connect to paraview server, deployed to compute nodes on  your cluster.</p>
+<ol type="1" start="1">
+<li>On your local workstation, make a directory called <code>paraview-pvsc/</code></li>
+</ol>
+<pre><code>mkdir paraview-pvsc</code></pre>
+<ol type="1" start="2">
+<li>Copy the <code>paraview-gcp.pvsc</code> file from your login node to <code>paraview-pvsc/</code></li>
+</ol>
+<pre><code>scp USERNAME@LOGIN-IP:fluid-slurm-gcp_custom-image-bakery/examples/paraview/paraview-gcp.pvsc ./paraview-pvsc/</code></pre>
+<ol type="1" start="3">
+<li>Start paraview from your terminal on your workstation.</li>
+</ol>
+<pre><code>paraview &amp;</code></pre>
+<ol type="1" start="4">
+<li>Click on the &#34;Connect to Server&#34; icon in the toolbar. This is the third icon from the left, near the open file icon.<img style="width: 568.00px" src="img/f4fa271fa573a6e5.png"></li>
+<li>On the dialog that appears, click on Load Servers.<img style="width: 542.00px" src="img/7dbb4e0ccc086c5.png"></li>
+<li>Navigate to the paraview-gcp.pvsc file that you&#39;ve copied from the cluster and click Open. <img style="width: 543.00px" src="img/bb6d30b5382a3de4.png"></li>
+<li>Click Connect.</li>
+<li>Fill out the form that appears, using settings that are consistent with your cluster and your firewall rule settings. Specifically, make sure that the SSH username is your username on the cluster, the Login Node IP Address is the login node&#39;s external IP address, and the server port is set to 11000 (the same port we opened in the Firewall Configuration section of this tutorial).<img style="width: 566.00px" src="img/b60a256642d4941d.png"></li>
+<li>Click Ok.</li>
+</ol>
+<p>From here, your paraview client will launch an Xterm window. <img style="width: 515.00px" src="img/c5e47f9dd130f6e3.png"></p>
+<p>Within this window, a series of commands are run automatically for you.</p>
+<ul>
+<li>An SSH tunnel is opened with your Fluid-Slurm-GCP cluster&#39;s login node over the specified tcp port</li>
+<li>The /apps/share/submit-paraview.sh script is executed on the login to submit a batch job.</li>
+<li>The instructions in the batch job will launch Paraview server with the desired number of MPI ranks and create a reverse TCP connection back to the login node over the same port.</li>
+</ul>
+<p>Additionally, you will be able to monitor the status of the node configuration.</p>
+<p>Once the job starts and the Paraview server is connected, you will be able to open files in your Paraview client that are located on your Fluid-Slurm-GCP cluster.</p>
+<aside class="special"><p><strong>Tip: </strong>In Paraview, open the memory inspector by clicking through View &gt; Memory Inspector. When you&#39;ve been connected to the cluster, you will be able to see your compute node resources appear in the memory inspector dashboard.<img style="width: 344.00px" src="img/80452d39b67d4a09.png"></p>
+</aside>
+<aside class="special"><p><strong>Tip: </strong>To disconnect from the cluster, click the Disconnect icon (to the right of the &#34;Connect&#34; icon) in the Paraview toolbar. When you disconnect, the Slurm job will automatically be stopped, and the compute node will be deprovisioned for you after 5 minutes of idle time.</p>
+</aside>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Congratulations" duration="0">
+        <p>In this codelab, you created a cloud-native HPC cluster and connected your local Paraview client to Paraview server that runs on auto-scaling compute nodes on Google Cloud Platform!</p>
+<h2 is-upgraded><strong>Further reading</strong></h2>
+<ul>
+<li><a href="https://fluid-slurm-gcp-codelabs.web.app/run-openfoam-on-gcp-with-cfd-gcp/index.html#0" target="_blank">Learn how to run Parallel OpenFOAM jobs on Google Cloud Platform with Fluid-Slurm-GCP</a></li>
+<li><a href="http://codelabs.fluidnumerics.com/create-a-high-availability-compute-partition" target="_blank">Learn how to configure a high availability compute partition (multi-zone)</a></li>
+<li><a href="http://codelabs.fluidnumerics.com/create-a-globally-scalable-compute-partition" target="_blank">Learn how to configure a globally scalable compute partition (multi-region)</a></li>
+<li><a href="https://cloud.google.com/compute/docs/instances/managing-instance-access" target="_blank">Learn how to configure OS-Login to ssh to your cluster with 3rd party ssh tools</a></li>
+<li><a href="https://cloud.google.com/compute/docs/oslogin/manage-oslogin-in-an-org" target="_blank">Learn how to manage POSIX user information with the directory API</a></li>
+<li><a href="https://help.fluidnumerics.com/cfd-gcp" target="_blank">https://help.fluidnumerics.com/cfd-gcp</a></li>
+</ul>
+<h2 is-upgraded><a href="https://docs.google.com/forms/d/e/1FAIpQLSd7EN_ptBOJ9Eg2vH-Bs95j8pD2sjaTAwdcLoWDBVmF0fVEfg/viewform?usp=sf_link" target="_blank">Tell us your feedback</a></h2>
+
+
+      </google-codelab-step>
+    
+  </google-codelab>
+
+  <script src="https://storage.googleapis.com/codelab-elements/native-shim.js"></script>
+  <script src="https://storage.googleapis.com/codelab-elements/custom-elements.min.js"></script>
+  <script src="https://storage.googleapis.com/codelab-elements/prettify.js"></script>
+  <script src="https://storage.googleapis.com/codelab-elements/codelab-elements.js"></script>
+  <script src="//support.google.com/inapp/api.js"></script>
+
+</body>
+</html>
