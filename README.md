@@ -4,6 +4,9 @@ Copyright 2021 Fluid Numerics LLC
 
 ## Research Computing Cloud
 
+The RCC is a highly flexible auto-scaling Slurm based cluster on Google Cloud that comes with a suite of software build stacks (compilers & MPI flavors), profiling tools for HPC applications, and the Singularity container platform. The RCC is offered with a Debian, Ubuntu, CentOS, or Rocky Linux OS at the base, and can easily be extended to incorporate user applications through traditional centralized package management, [image baking processes](https://github.com/fluidnumerics/rcc-apps), or containerization. [Learn more](https://research-computing-cluster.readthedocs.io/en/latest/)
+
+
 * [Run the WRF Weather Forecasting Model with the RCC](https://fluidnumerics.github.io/rcc-codelabs/rcc/wrf-on-rcc)
 * (Coming Soon) Create a Research Computing Cluster on Google Cloud
 
