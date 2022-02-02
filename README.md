@@ -12,7 +12,7 @@ Copyright 2021 Fluid Numerics LLC
 
 * [Create a Fluid-Slurm-GCP Research Computing Cluster on Google Cloud](https://fluidnumerics.github.io/rcc-codelabs/fluid-slurm-gcp/create-a-research-computing-cluster-on-google-cloud)
 * [Create a multi-region partition on Fluid-Slurm-GCP](https://fluidnumerics.github.io/rcc-codelabs/fluid-slurm-gcp/create-a-globally-scalable-partition)
-* [Connect your Paraview Client with Paraview Server on Fluid-Slurm-GCP](https://fluidnumerics.github.io/rcc-codelabs/fluid-slurm-gcp/connect-your-paraview-client-with-paraview-server
+* [Connect your Paraview Client with Paraview Server on Fluid-Slurm-GCP](https://fluidnumerics.github.io/rcc-codelabs/fluid-slurm-gcp/connect-your-paraview-client-with-paraview-server)
 
 ## Cloud-CFD
 
