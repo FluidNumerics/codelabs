@@ -1,0 +1,313 @@
+
+<!doctype html>
+
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+  <meta name="theme-color" content="#4F7DC9">
+  <meta charset="UTF-8">
+  <title>Run the WRF Weather Forecasting Model with the RCC</title>
+  <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+  <link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://storage.googleapis.com/codelab-elements/codelab-elements.css">
+  <style>
+    .success {
+      color: #1e8e3e;
+    }
+    .error {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+  <google-codelab codelab-gaid=""
+                  id="rcc/wrf-on-rcc"
+                  title="Run the WRF Weather Forecasting Model with the RCC"
+                  environment="web"
+                  feedback-link="">
+    
+      <google-codelab-step label="Introduction" duration="0">
+        <p><strong>Last Updated:</strong> 2021-10-28<img style="width: 624.00px" src="img/291d01369692074d.png"></p>
+<h2 is-upgraded>What you will build</h2>
+<p>In this codelab, you are going to deploy an auto-scaling High Performance Computing (HPC) cluster on Google Cloud with the Slurm job scheduler. You will use an example Terraform deployment that deploys this cluster with <a href="https://www.mmm.ucar.edu/weather-research-and-forecasting-model" target="_blank">WRF®</a> installed via <a href="https://spack.io" target="_blank">Spack</a>. Then, you will use this infrastructure to run the <a href="https://akirakyle.github.io/WRF_benchmarks/results.html#new_conus2.5km" target="_blank">CONUS 2.5km benchmark</a> or the <a href="https://akirakyle.github.io/WRF_benchmarks/results.html#new_conus12km" target="_blank">CONUS 12km benchmark</a>.</p>
+<h2 is-upgraded><strong>What you will learn</strong></h2>
+<ul>
+<li>How to build a VM image that is compatible with Slurm-GCP and the <a href="https://github.com/fluidnumerics/research-computing-cluster" target="_blank">RCC solutions</a> to run WRF® simulations</li>
+<li>How to deploy a cloud-native HPC cluster with the Slurm job scheduler</li>
+<li>How to run WRF® in parallel on Google Cloud using a Slurm batch job</li>
+</ul>
+<h2 is-upgraded><strong>What you will need</strong></h2>
+<ul>
+<li><a href="https://www.google.com/gmail/" target="_blank">Gmail Account</a> with <a href="https://cloud.google.com/compute/docs/instances/managing-instance-access#add_oslogin_keys" target="_blank">an SSH key attached</a>, or <a href="https://gsuite.google.com/" target="_blank">Google Workspace</a>, <a href="https://cloud.google.com/identity" target="_blank">Cloud Identity</a></li>
+<li><a href="https://cloud.google.com/resource-manager/docs/creating-managing-projects" target="_blank">Google Cloud Platform Project with Billing enabled</a></li>
+<li>Project owner role on your GCP Project</li>
+<li><a href="https://cloud.google.com/compute/quotas" target="_blank">Sufficient Compute Engine Quota</a> (480 c2 vCPUs and 500 GB PD-Standard Disk)</li>
+<li>RCC-WRF Deployment</li>
+</ul>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Low Quota: Deploy an auto-scaling HPC cluster with Terraform" duration="5">
+        <p>In this section, you will deploy an auto-scaling HPC cluster including the Slurm job scheduler.  This is identical to the High Quota option, except that the machine type used is smaller and the number of vCPUs used is smaller.</p>
+<aside class="warning"><p><strong>Important:</strong> The default quota for the C2 CPUs for a new project is typically 24 vCPUs. If you have a larger quota and would like to run the CONUS 2.5km benchmark, you can skip this section and the next section.</p>
+</aside>
+<ol type="1" start="1">
+<li><a href="https://console.cloud.google.com/?cloudshell=true" target="_blank">Open your Cloud Shell on GCP.</a></li>
+<li>Clone the Research Computing Cloud Applications repository from Fluid Numerics</li>
+</ol>
+<pre>cd ~
+git clone https://github.com/FluidNumerics/rcc-apps.git</pre>
+<ol type="1" start="3">
+<li>Change to the wrf/tf directory:</li>
+</ol>
+<pre>cd  ~/rcc-apps/wrf/tf</pre>
+<ol type="1" start="4">
+<li>Create and review a terraform plan. Set the environment variables <code>RCC_NAME</code>, <code>RCC_PROJECT</code>, and <code>RCC_ZONE</code> to specify the name of your cluster, your GCP project, and the zone you want to deploy to.</li>
+</ol>
+<pre>export RCC_PROJECT=&lt;PROJECT ID&gt;
+export RCC_ZONE=&lt;ZONE&gt; 
+export RCC_NAME=&#34;wrf-small&#34; </pre>
+<ol type="1" start="5">
+<li>The first time you run terraform you must run the `init` command:</li>
+</ol>
+<pre>terraform init</pre>
+<ol type="1" start="6">
+<li>Create the plan with the make command, which will run `terraform`</li>
+</ol>
+<pre>make plan</pre>
+<aside class="special"><p><strong>Note:</strong> The Makefile provides detailed commands that are used to concretize your deployment, create a Terraform plan, deploy resources, and delete resources.</p>
+</aside>
+<aside class="special"><p><strong>Note:</strong> For better file IO performance over NFS, increase the controller disk size to 2.5 TB and change the controller_disk_type to pd-ssd. You can change the disk size by editing basic.tfvars.tmpl and adding <code>controller_disk_size_gb = 2500</code>. <br>Alternatively, a <a href="https://github.com/FluidNumerics/lustre-gcp_terraform" target="_blank">Lustre file system</a> is recommended.</p>
+</aside>
+<aside class="warning"><p><strong>Caution:</strong> When choosing a zone, make sure that you select a zone where C2 instances are available. <a href="https://cloud.google.com/compute/docs/regions-zones#available" target="_blank">Learn more about available regions and zones</a>.</p>
+<p>To get more information about the quota limitations on your project, the <a href="https://console.cloud.google.com/iam-admin/quotas?_ga=2.107694530.1745805448.1619444101-1941436744.1612364381&_gac=1.50247380.1618854421.Cj0KCQjw1PSDBhDbARIsAPeTqrfYD6ZIHQpVL-3eMPw2tP3QsSlEzCVxzX30bSM06M0UF59C_3QGBccaAsjDEALw_wcB" target="_blank">Quotas</a> page in the Google Cloud Console lists all the quotas. Search for &#34;Limit Name: C2 CPUs&#34;. This will display the available C2 CPUs in your selected zone.</p>
+</aside>
+<ol type="1" start="7">
+<li>Deploy the cluster. The setup process can take up to 5 minutes.</li>
+</ol>
+<pre>make apply</pre>
+<ol type="1" start="8">
+<li>SSH to the <em>login</em> node created in the previous step. You can see this node in the previous step (probably called <em>wrf-small-login0</em>)<em>. </em>You can do this by clicking on the SSH button next to the list of VM Instances in the console menu item <em>Compute Engine -&gt; VM instance.</em></li>
+</ol>
+<p><strong>Option:</strong> This pair of gcloud commands will figure out the login node name and SSH into it:</p>
+<p>``` console</p>
+<p>export CLUSTER_LOGIN_NODE=$(gcloud compute instances list --zones ${WRF_ZONE} --filter=&#34;name ~ .*login&#34; --format=&#34;value(name)&#34; | head -n1)</p>
+<p>gcloud compute ssh ${CLUSTER_LOGIN_NODE} --zone ${WRF_ZONE}</p>
+<p>```</p>
+<ol type="1" start="9">
+<li>Once you are connected to the login node, to verify your cluster setup, check that the wrf is available</li>
+</ol>
+<pre>$ spack find wrf
+==&gt; In environment /opt/spack-pkg-env
+==&gt; Root specs
+wrf@4.2
+
+==&gt; 1 installed package
+-- linux-centos7-x86_64 / intel@2021.3.0 ------------------------
+wrf@4.2</pre>
+<ol type="1" start="10">
+<li>Verify that <code>/apps/share/conus-12km</code> has the contents listed below. </li>
+</ol>
+<pre>$  ls -1 /apps/share/conus-12km/
+FILE:2018-06-17_00
+FILE:2018-06-17_03
+FILE:2018-06-17_06
+FILE:2018-06-17_09
+FILE:2018-06-17_12
+geo_em.d01.nc
+geogrid.log
+met_em.d01.2018-06-17_00:00:00.nc
+met_em.d01.2018-06-17_03:00:00.nc
+met_em.d01.2018-06-17_06:00:00.nc
+met_em.d01.2018-06-17_09:00:00.nc
+met_em.d01.2018-06-17_12:00:00.nc
+metgrid.log
+namelist.input
+namelist.wps
+ungrib.log
+wrfbdy_d01
+wrfinput_d01</pre>
+<aside class="special"><p><strong>Note:</strong> This deployment uses a custom image built using the schedmd-slurm-public/schedmd-slurm-20-11-4-centos-7 VM image. You can build WRF for other operating systems using the <a href="https://github.com/FluidNumerics/hpc-apps-gcp/blob/main/wrf/install.sh" target="_blank">fluidnumerics/hpc-apps-gcp repository on Github</a>.</p>
+</aside>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Run the CONUS 12km Benchmark" duration="5">
+        <p>To run the CONUS 12km benchmark, you will submit a Slurm <em>batch job</em>. The input decks for this benchmark are included in the wrf-gcp VM image under /apps/share/benchmarks/conus-12km.</p>
+<p>For this section, you must be SSH connected to the <em>login</em> node of the cluster</p>
+<ol type="1" start="1">
+<li>Copy the example wrf-conus.sh batch file from /apps/share</li>
+</ol>
+<pre>cp /apps/share/wrf-conus12.sh ~/</pre>
+<ol type="1" start="2">
+<li>Submit the batch job using sbatch, specifying the number of MPI tasks you want to launch with using the <code>--ntasks</code> flag. In the example below, we are using 24 MPI tasks. With c2-standard-8 instances, the cluster will provision 3 nodes and distribute the tasks evenly across these compute nodes.</li>
+</ol>
+<pre>sbatch --ntasks=24 wrf-conus12.sh</pre>
+<aside class="special"><p><strong>Note:</strong> Compute nodes are created as needed when jobs are submitted. For this first job submission, it can take up to 3 minutes for the job to start.</p>
+</aside>
+<ol type="1" start="3">
+<li>Wait for the job to complete. This benchmark is configured to run a 2-hour forecast, which takes about 6 minutes to complete with 24 ranks. You can monitor the status of your job with <code>squeue</code>.</li>
+<li>When the job completes, check the contents of rsl.out.0000 to verify that you see the statement &#34;wrf: SUCCESS COMPLETE WRF&#34;. The numeric suffix will be different if you&#39;ve run the job more than once, e.g., you got a config setting wrong and had to rerun it.</li>
+</ol>
+<pre>$ tail -n1 ${HOME}/wrf-benchmark/rsl.out.0000
+d01 2018-06-17_06:00:00 wrf: SUCCESS COMPLETE WRF</pre>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="High Quota: Deploy an auto-scaling HPC cluster with Terraform" duration="5">
+        <p>In this section, you will deploy an auto-scaling HPC cluster including the Slurm job scheduler in </p>
+<aside class="warning"><p><strong>Important:</strong> The default quota for the C2 CPUs for a new project is typically 24 vCPUs. This is not sufficient to run the larger CONUS 2.5km benchmark. If you have a large quota for up 5 VMs, you can run this part of the codelab.</p>
+</aside>
+<ol type="1" start="1">
+<li><a href="https://console.cloud.google.com/?cloudshell=true" target="_blank">Open your Cloud Shell on GCP.</a></li>
+<li>Clone the Research Computing Cloud Applications repository from Fluid Numerics</li>
+</ol>
+<pre>cd ~
+git clone https://github.com/FluidNumerics/rcc-apps.git</pre>
+<ol type="1" start="3">
+<li>Change to the wrf/tf directory:</li>
+</ol>
+<pre>cd  ~/rcc-apps/wrf/tf</pre>
+<ol type="1" start="4">
+<li>Create and review a terraform plan. Set the environment variables <code>RCC_NAME</code>, <code>RCC_PROJECT</code>, and <code>RCC_ZONE</code> to specify the name of your cluster, your GCP project, and the zone you want to deploy to.</li>
+</ol>
+<pre>export RCC_PROJECT=&lt;PROJECT ID&gt;
+export RCC_ZONE=&lt;ZONE&gt; 
+export RCC_NAME=&#34;wrf-large&#34; </pre>
+<ol type="1" start="5">
+<li>If you did not do it above, you must run `terraform init` to start up terraform:</li>
+</ol>
+<pre>terraform init</pre>
+<ol type="1" start="6">
+<li>Create the plan with the make command.</li>
+</ol>
+<pre>make plan</pre>
+<aside class="special"><p><strong>Note:</strong> For better file IO performance over NFS, increase the controller disk size to 2.5 TB and change the controller_disk_type to pd-ssd. You can change the disk size by editing basic.tfvars.tmpl and adding <code>controller_disk_size_gb = 2500</code>. <br>Alternatively, a <a href="https://github.com/FluidNumerics/lustre-gcp_terraform" target="_blank">Lustre file system</a> is recommended.</p>
+</aside>
+<aside class="warning"><p><strong>Caution:</strong> When choosing a zone, make sure that you select a zone where C2 instances are available. <a href="https://cloud.google.com/compute/docs/regions-zones#available" target="_blank">Learn more about available regions and zones</a>.</p>
+<p>To get more information about the quota limitations on your project, the <a href="https://console.cloud.google.com/iam-admin/quotas?_ga=2.107694530.1745805448.1619444101-1941436744.1612364381&_gac=1.50247380.1618854421.Cj0KCQjw1PSDBhDbARIsAPeTqrfYD6ZIHQpVL-3eMPw2tP3QsSlEzCVxzX30bSM06M0UF59C_3QGBccaAsjDEALw_wcB" target="_blank">Quotas</a> page in the Google Cloud Console lists all the quotas. Search for &#34;Limit Name: C2 CPUs&#34;. This will display the available C2 CPUs in your selected zone.</p>
+</aside>
+<ol type="1" start="7">
+<li>Deploy the cluster. The setup process can take up to 5 minutes.</li>
+</ol>
+<pre>make apply</pre>
+<ol type="1" start="8">
+<li>SSH to the <em>login</em> node created in the previous step. You can see this node in the previous step (probably called <em>wrf-large-login0</em>)<em>. </em>You can do this by clicking on the SSH button next to the list of VM Instances in the console menu item <em>Compute Engine -&gt; VM instance.</em></li>
+</ol>
+<p><strong>Option:</strong> This pair of gcloud commands will figure out the login node name and SSH into it:</p>
+<p>``` console</p>
+<p>export CLUSTER_LOGIN_NODE=$(gcloud compute instances list --zones ${WRF_ZONE} --filter=&#34;name ~ .*login&#34; --format=&#34;value(name)&#34; | head -n1)</p>
+<p>gcloud compute ssh ${CLUSTER_LOGIN_NODE} --zone ${WRF_ZONE}</p>
+<p>```</p>
+<p>The second command should result in you being connected to the Slurm Login node.</p>
+<ol type="1" start="9">
+<li>Once you are connected to the login node, to verify your cluster setup, check that the wrf module is available.</li>
+</ol>
+<pre>$ spack find wrf
+==&gt; In environment /opt/spack-pkg-env
+==&gt; Root specs
+wrf@4.2
+
+==&gt; 1 installed package
+-- linux-centos7-x86_64 / intel@2021.3.0 ------------------------
+wrf@4.2</pre>
+<ol type="1" start="10">
+<li>Verify that <code>/apps/share/conus-2.5km</code> has the contents listed below. </li>
+</ol>
+<pre>$ ls -1 /apps/share/conus-2.5km
+FILE:2018-06-17_00
+FILE:2018-06-17_03
+FILE:2018-06-17_06
+FILE:2018-06-17_09
+FILE:2018-06-17_12
+geo_em.d01.nc
+geogrid.log
+gfs.0p25.2018061700.f000.grib2
+gfs.0p25.2018061700.f003.grib2
+gfs.0p25.2018061700.f006.grib2
+gfs.0p25.2018061700.f009.grib2
+gfs.0p25.2018061700.f012.grib2
+met_em.d01.2018-06-17_00:00:00.nc
+met_em.d01.2018-06-17_03:00:00.nc
+met_em.d01.2018-06-17_06:00:00.nc
+met_em.d01.2018-06-17_09:00:00.nc
+met_em.d01.2018-06-17_12:00:00.nc
+metgrid.log
+namelist.input
+namelist.wps
+ungrib.log
+wrfbdy_d01
+wrfinput_d01</pre>
+<aside class="special"><p><strong>Note:</strong> This deployment uses a custom image built using the schedmd-slurm-public/schedmd-slurm-20-11-4-centos-7 VM image. You can build WRF for other operating systems using the <a href="https://github.com/FluidNumerics/hpc-apps-gcp/blob/main/wrf/install.sh" target="_blank">fluidnumerics/hpc-apps-gcp repository on Github</a>.</p>
+</aside>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Run the CONUS 2.5km Benchmark" duration="5">
+        <p>To run the CONUS 2.5km benchmark, you will submit a Slurm <em>batch job</em>. The input decks for this benchmark are included in the wrf-gcp VM image under /apps/share/benchmarks/conus-2.5km.</p>
+<p>For this section, you must be SSH connected to the <em>login</em> node of the cluster</p>
+<ol type="1" start="1">
+<li>Copy the example wrf-conus.sh batch file from /apps/share</li>
+</ol>
+<pre>cp /apps/share/wrf-conus2p5.sh ~/</pre>
+<ol type="1" start="2">
+<li>Submit the batch job using sbatch, specifying the number of MPI tasks you want to launch with using the <code>--ntasks</code> flag. In the example below, we are using 24 MPI tasks. With c2-standard-8 instances, the cluster will provision 3 nodes and distribute the tasks evenly across these compute nodes.</li>
+</ol>
+<pre>sbatch --ntasks=480 wrf-conus12.sh</pre>
+<aside class="special"><p><strong>Note:</strong> Compute nodes are created as needed when jobs are submitted. For this first job submission, it can take up to 3 minutes for the job to start.</p>
+</aside>
+<ol type="1" start="3">
+<li>Wait for the job to complete. This benchmark is configured to run a 6-hour forecast, which takes about 1 hour to complete with 480 ranks. You can monitor the status of your job with <code>squeue</code>.</li>
+<li>When the job completes, check the contents of rsl.out.0000 to verify that you see the statement &#34;wrf: SUCCESS COMPLETE WRF&#34;. The numeric suffix will be different if you&#39;ve run the job more than once, e.g., you got a config setting wrong and had to rerun it.</li>
+</ol>
+<pre>$ tail -n1 ${HOME}/wrf-benchmark/rsl.out.0000
+d01 2018-06-17_06:00:00 wrf: SUCCESS COMPLETE WRF</pre>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Congratulations" duration="0">
+        <p>In this codelab, you created an auto-scaling, cloud-native HPC cluster and ran a parallel WRF® simulation on Google Cloud Platform!</p>
+<h2 is-upgraded>Cleaning up</h2>
+<p>To avoid incurring charges to your Google Cloud Platform account for the resources used in this codelab:</p>
+<h3 is-upgraded>Delete the project</h3>
+<p>The easiest way to eliminate billing is to delete the project you created for the codelab.</p>
+<p><strong>Caution</strong>: Deleting a project has the following effects:</p>
+<ul>
+<li><strong>Everything in the project is deleted.</strong> If you used an existing project for this codelab, when you delete it, you also delete any other work you&#39;ve done in the project.</li>
+<li><strong>Custom project IDs are lost.</strong> When you created this project, you might have created a custom project ID that you want to use in the future. To preserve the URLs that use the project ID, such as an <strong>appspot.com</strong> URL, delete selected resources inside the project instead of deleting the whole project.</li>
+</ul>
+<p>If you plan to explore multiple codelabs and quickstarts, reusing projects can help you avoid exceeding project quota limits.</p>
+<ol type="1" start="1">
+<li>In the Cloud Console, go to the <strong>Manage resources</strong> page.<br><a href="https://console.cloud.google.com/iam-admin/projects" target="_blank">Go to the Manage resources page</a></li>
+<li>In the project list, select the project that you want to delete and then click <strong>Delete </strong><img style="width: 20.00px" src="img/dc096e8341a05fec.png">.</li>
+<li>In the dialog, type the project ID and then click <strong>Shut down</strong> to delete the project.</li>
+</ol>
+<h3 is-upgraded>Delete the individual resources</h3>
+<ol type="1" start="1">
+<li><a href="https://console.cloud.google.com/?cloudshell=true" target="_blank">Open your cloud shell</a> and navigate to the wrf example directory</li>
+</ol>
+<pre><code>cd  ~/rcc-apps/wrf/tf</code></pre>
+<ol type="1" start="2">
+<li>Run make destroy to delete all of the resources.</li>
+</ol>
+<pre><code>make destroy</code></pre>
+
+
+      </google-codelab-step>
+    
+  </google-codelab>
+
+  <script src="https://storage.googleapis.com/codelab-elements/native-shim.js"></script>
+  <script src="https://storage.googleapis.com/codelab-elements/custom-elements.min.js"></script>
+  <script src="https://storage.googleapis.com/codelab-elements/prettify.js"></script>
+  <script src="https://storage.googleapis.com/codelab-elements/codelab-elements.js"></script>
+  <script src="//support.google.com/inapp/api.js"></script>
+
+</body>
+</html>

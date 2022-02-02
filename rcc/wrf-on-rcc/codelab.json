@@ -1,0 +1,24 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2022-02-02T20:09:14Z",
+  "id": "rcc/wrf-on-rcc",
+  "duration": 20,
+  "title": "Run the WRF Weather Forecasting Model with the RCC",
+  "authors": "Joseph Schoonover",
+  "summary": "This codelab will walk you through running WRF® on Google Cloud Platform using the Research Computing Cloud from Fluid Numerics",
+  "source": "1tfaPdhZk2cEI7ngf1YbmYGI2mf-dnvSHysR0x2xuUjg",
+  "theme": "hpc",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "HPC"
+  ],
+  "tags": [
+    "web"
+  ],
+  "url": "rcc/wrf-on-rcc"
+}

@@ -3,8 +3,8 @@
   "format": "html",
   "prefix": "https://storage.googleapis.com",
   "mainga": "UA-49880327-14",
-  "updated": "2021-07-26T20:53:58Z",
-  "id": "run-feots-offline-tracer-simulation",
+  "updated": "2022-02-02T18:37:46Z",
+  "id": "feots/run-feots-offline-tracer-simulation",
   "duration": 20,
   "title": "Run FEOTS Offline Tracer Simulations on Google Cloud",
   "authors": "Joseph Schoonover",
@@ -21,5 +21,5 @@
     "web"
   ],
   "ga": "UA-125720260-6",
-  "url": "run-feots-offline-tracer-simulation"
+  "url": "feots/run-feots-offline-tracer-simulation"
 }
