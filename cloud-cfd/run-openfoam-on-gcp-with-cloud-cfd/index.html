@@ -111,13 +111,13 @@
 <li>Edit the cluster-configuration file so that you are allowed to submit to the <code>openfoam</code> partition. Make sure you remove the empty <code>slurm_accounts: []</code> that is pre-populated in the cluster-configuration file.<br>The example <code>slurm_account</code> configuration below will create a Slurm account called <code>cfd</code> with the user <code>joe</code> added to it. Users in this account will be allowed to submit jobs to the <code>meshing</code>, <code>openfoam</code>, and <code>paraview</code> partitions.</li>
 </ol>
 <pre><code>slurm_accounts:
-  - allowed_partitions:
-- meshing
-- openfoam
-- paraview
-    name: cfd
-    users:
-- joe</code></pre>
+- allowed_partitions:
+  - meshing
+  - openfoam
+  - paraview
+  name: cfd
+  users:
+  - joe</code></pre>
 <ol type="1" start="6">
 <li>Preview the changes for updating the <code>slurm_accounts</code>. Verify that you have entered in the Slurm accounting information correctly.</li>
 </ol>

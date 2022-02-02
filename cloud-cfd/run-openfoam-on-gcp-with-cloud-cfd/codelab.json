@@ -3,7 +3,7 @@
   "format": "html",
   "prefix": "https://storage.googleapis.com",
   "mainga": "UA-49880327-14",
-  "updated": "2022-02-02T18:25:35Z",
+  "updated": "2022-02-02T20:21:55Z",
   "id": "cloud-cfd/run-openfoam-on-gcp-with-cloud-cfd",
   "duration": 20,
   "title": "Run OpenFOAM® on GCP with Cloud CFD",
