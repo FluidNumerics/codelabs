@@ -22,7 +22,7 @@ The RCC is a highly flexible auto-scaling Slurm based cluster on Google Cloud th
  The [Cloud-CFD Solution](https://console.cloud.google.com/marketplace/product/fluid-cluster-ops/cloud-cfd) is a click-to-deploy solution on Google Cloud Marketplace that is part of Fluid Numerics' RCC Suite of solutions. Cloud-CFD provides pre-installed open-source tools and pre-configured compute partitions for running [OpenFOAM](https://openfoam.org/), [Paraview](https://paraview.org), and [Gmsh](https://gmsh.info/).
 
 * [Run OpenFOAM on Google Cloud with Cloud-CFD](https://fluidnumerics.github.io/rcc-codelabs/cloud-cfd/run-openfoam-on-gcp-with-cloud-cfd)
-* [Connect you Paraview Client with Paraview Server on Cloud-CFD](https://fluidnumerics.github.io/rcc-codelabs/cloud-cfd/connect-your-paraview-client-with-paraview-server)
+* [Connect your Paraview Client with Paraview Server on Cloud-CFD](https://fluidnumerics.github.io/rcc-codelabs/cloud-cfd/connect-your-paraview-client-with-paraview-server)
 
 
 
