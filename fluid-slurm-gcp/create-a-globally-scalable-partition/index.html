@@ -28,7 +28,7 @@
                   feedback-link="https://forms.gle/q5HaN43HyVXLSLmM9">
     
       <google-codelab-step label="Introduction" duration="0">
-        <p class="image-container"><img style="width: 148.50px" src="img/b095befab07633f0.png"></p>
+        <p class="image-container"><img style="width: 148.50px" src="img/361009b7c983a446.png"></p>
 <p><strong>Last Updated:</strong> 2021-07-26</p>
 <p>In this article, we assume that you have already completed the <a href="https://fluidnumerics.github.io/codelabs/slurm-gcp/create-a-research-computing-cluster-on-google-cloud/#0" target="_blank">&#34;Create a Research Computing Cluster on Google Cloud&#34; codelab</a> and have an existing fluid-slurm-gcp cluster.</p>
 <h2 is-upgraded><strong>Use case for multi-region cluster configurations on Google Cloud Platform</strong></h2>
@@ -43,7 +43,7 @@
 <p>GCP projects come with a <a href="https://cloud.google.com/vpc/docs/vpc#default-network" target="_blank">default network</a> with<a href="https://cloud.google.com/vpc/docs/firewalls#more_rules_default_vpc" target="_blank"> pre-populated firewall rules</a> and a subnetwork for each region.</p>
 <h3 is-upgraded><strong>Infrastructure</strong></h3>
 <p>Fluid-slurm-gcp provides a schema that you can use to describe what machines you want to use on GCP, which regions and zones to deploy them in, and what partitions in slurm to align them with. This allows you to have identical machines spread across multiple region in a single globally scalable compute partition.</p>
-<h2 is-upgraded><img style="width: 624.00px" src="img/6d5c85d43bf4520f.png"></h2>
+<h2 is-upgraded><img style="width: 624.00px" src="img/332de30f861a6755.png"></h2>
 <p>This schematic provides an example of a fluid-slurm-gcp deployment in the us-west-1 and europe-west-1 regions (The Dalles, Oregon, USA and St. Ghislain, Belgium). The login and controller instances reside in a single zone of us-west-1. </p>
 <p>The compute partition (called &#34;globally-scalable&#34;) has two sets of machines : <code>compute-us-w1-b-*</code> and <code>compute-eu-w1-b-*</code>. Each machine set is deployed in their own subnetwork corresponding to the region they will be deployed to. In this configuration, users can submit jobs to the globally-scalable partition and the Slurm job scheduler will schedule jobs to run in any of these regions.</p>
 <h2 is-upgraded><strong>What you will build</strong></h2>

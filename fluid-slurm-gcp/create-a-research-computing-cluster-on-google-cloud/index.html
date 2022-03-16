@@ -28,7 +28,7 @@
                   feedback-link="https://forms.gle/q5HaN43HyVXLSLmM9">
     
       <google-codelab-step label="Introduction" duration="0">
-        <p class="image-container"><img style="width: 148.50px" src="img/b095befab07633f0.png"></p>
+        <p class="image-container"><img style="width: 148.50px" src="img/361009b7c983a446.png"></p>
 <p><strong>Last Updated:</strong> 2020-07-27</p>
 <h2 is-upgraded><strong>Use cases for  Fluid Numerics&#39; HPC Cluster on Google Cloud Platform</strong></h2>
 <p>Organizations are beginning to investigate how to leverage cloud computing resources to meet highly variable high performance computing needs that often exceed the capacity of on-premise compute resources. </p>
@@ -36,7 +36,7 @@
 <p>Fluid Numerics has developed a globally scalable and highly customizable HPC cluster on Google Cloud Platform. Fluid-Slurm-GCP is built around the <a href="https://slurm.schedmd.com/" target="_blank">Slurm job scheduler</a> and Google Cloud Platform engineering components. With this deployment, you can easily take advantage of compute resources across Google&#39;s data-centers worldwide, while maintaining a familiar HPC environment for you and your team. The fluid-slurm-gcp cluster can be used as a cloud-native or federated solution that provides cloud-bursting capabilities from your on-premise systems. </p>
 <p>Further, with backgrounds in academia and government research, Fluid Numerics understands the requirements for expensing costs for government funded research. We have designed the fluid-slurm-gcp system to permit <a href="https://help.fluidnumerics.com/slurm-gcp/documentation/multi-project-slurm-gcp-for-universities-and-large-organizations" target="_blank">granular billing breakdowns</a> and controls through cost management platforms like <a href="https://www.orbitera.com/" target="_blank">Orbitera</a>.</p>
 <h3 is-upgraded><strong>Infrastructure</strong></h3>
-<p class="image-container"><img style="width: 624.00px" src="img/6ee7300bc951090c.png"></p>
+<p class="image-container"><img style="width: 624.00px" src="img/89804a92fc4963bc.png"></p>
 <p>fluid-slurm-gcp provides a design on cloud resources that is similar in look-and-feel to on-premise HPC infrastructure. The deployment has a number of static login nodes, where users access the cluster, and a <em>controller</em> instance that hosts the Slurm job scheduler. Compute nodes are either static or ephemeral.</p>
 <p>Static compute nodes persist as long as the deployment is active and remain ready to receive workloads from Slurm. Ephemeral compute nodes are created on-the-fly, as needed, to meet variable compute capacity demands. When ephemeral nodes become idle, Slurm automatically removes the compute resources from GCP so that you pay only for compute cycles as needed. To develop a better understanding of the costs on GCP for fluid-slurm-gcp, check out our <a href="https://help.fluidnumerics.com/slurm-gcp/pricing" target="_blank">pricing documentation</a>. </p>
 <h3 is-upgraded><strong>Software tools</strong></h3>
@@ -79,7 +79,7 @@
 </aside>
 <iframe class="youtube-video" src="https://www.youtube.com/embed/WXVPGfNBMOk?rel=0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 <p>In the project selection dropdown menu, select the project you want to use to create your HPC cluster. In the products and services menu, navigate to APIs &amp; Services &gt; Dashboard.</p>
-<p class="image-container"><img style="width: 316.00px" src="img/6eba7e4957bf17a6.png"></p>
+<p class="image-container"><img style="width: 316.00px" src="img/de6268bb60e7dd62.png"></p>
 <p>Click on + Enable APIs and Services. Search for &#34;Compute Engine&#34; and click on the Compute Engine API. Click Enable and wait for the Compute Engine API to be configured and setup.</p>
 <h2 is-upgraded><strong>Verify GCP Quota</strong></h2>
 <p>For this demo, you will need the following minimum quota</p>
@@ -87,7 +87,7 @@
 <li>12 vCPUs in us-west1 and europe-west1.</li>
 <li>120 GB PD-Standard Disk in us-west1 and europe-west1</li>
 </ul>
-<p class="image-container"><img style="width: 369.81px" src="img/b24a27997eda2105.png"></p>
+<p class="image-container"><img style="width: 369.81px" src="img/3b2b8ab622d36c8b.png"></p>
 <p>To verify and/or modify your quota, navigate to IAM &amp; Admin &gt; Quotas in the Products and Services menu. Use the following filters to display only CPU and PD-Standard disk quota in us-west1 and europe-west1</p>
 <ul>
 <li>In the Services dropdown menu, select only &#34;Compute Engine API&#34;. </li>
@@ -167,7 +167,7 @@
 <h2 is-upgraded>Verify your cluster has been properly set up</h2>
 <p class="image-container"><img style="width: 624.00px" src="img/e00bfb83ad63227f.png"></p>
 <p>Now that your deployment has been launched, it is time to access the login node. You can do this by clicking the SSH button from the deployment-manager page. This will open up a browser window with an active terminal on the login node.</p>
-<p class="image-container"><img style="width: 514.50px" src="img/6bad2664f5634ea3.png"></p>
+<p class="image-container"><img style="width: 514.50px" src="img/d95aab376f987b1d.png"></p>
 <p>Once you have logged into the login node, let&#39;s make sure that /home, /apps, and /etc are mounted from the controller.</p>
 <pre><code>$ df -h
 Filesystem                          Size  Used Avail Use% Mounted on

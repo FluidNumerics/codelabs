@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
   <meta name="theme-color" content="#4F7DC9">
   <meta charset="UTF-8">
-  <title>Run OpenFOAM® on GCP with Cloud CFD</title>
+  <title>Run the NACA0012 Aerofoil OpenFOAM® Benchmark on Google Cloud</title>
   <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
   <link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
   <link rel="stylesheet" href="https://storage.googleapis.com/codelab-elements/codelab-elements.css">
@@ -23,138 +23,130 @@
   <google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
   <google-codelab codelab-gaid="UA-125720260-6"
                   id="cloud-cfd/run-openfoam-on-gcp-with-cloud-cfd"
-                  title="Run OpenFOAM® on GCP with Cloud CFD"
+                  title="Run the NACA0012 Aerofoil OpenFOAM® Benchmark on Google Cloud"
                   environment="web"
                   feedback-link="https://forms.gle/q5HaN43HyVXLSLmM9">
     
       <google-codelab-step label="Introduction" duration="0">
-        <p><strong>Last Updated:</strong> 2020-11-04</p>
+        <p><strong>Last Updated:</strong> 2022-03-15</p>
 <h2 is-upgraded><strong>What you will build</strong></h2>
-<p>In this codelab, you are going to deploy an auto-scaling HPC cluster on Google Cloud that comes with OpenFOAM®, Paraview, and mesh generation tools. You will use this infrastructure to simulate compressible flow past a NACA0012 aerofoil with OpenFOAM®.</p>
+<p>In this codelab, you are going to deploy an auto-scaling research computing cluster on Google Cloud that comes with OpenFOAM®, Paraview, and mesh generation tools. You will use this infrastructure to simulate compressible flow past a NACA0012 aerofoil with OpenFOAM® and visualize results using Paraview in a local-client to cloud-server configuration.</p>
 <h2 is-upgraded><strong>What you will learn</strong></h2>
 <ul>
-<li>How to configure Identity and Access Management (IAM) policies for operating an HPC cluster on Google Cloud Platform</li>
-<li>How to deploy a cloud-native HPC cluster with the Slurm job scheduler</li>
-<li>How to set up basic Slurm accounting with Fluid Numerics&#39; cluster-services</li>
+<li>How to deploy a research computing cluster on Google Cloud using Terraform</li>
 <li>How to run OpenFOAM® in parallel on Google Cloud Platform using a Slurm batch job</li>
+<li>How to connect your local Paraview client to Paraview-server on Google Cloud.</li>
+</ul>
+<h2 is-upgraded><strong>Recommended Reading</strong></h2>
+<p>To accompany this codelab, we recommend reading the following documentation that will help you familiarize yourself with necessary elements of Google Cloud and Fluid Numerics&#39; Research Computing Cluster.</p>
+<ul>
+<li><a href="https://cloud.google.com/docs/quota" target="_blank">Working with Quota on Google Cloud</a></li>
+<li><a href="https://cloud.google.com/compute/docs/regions-zones" target="_blank">Google Compute Engine Regions and Zones</a></li>
+<li><a href="https://research-computing-cluster.readthedocs.io/en/latest/Reference/architecture.html" target="_blank">Research Computing Cluster Architecture</a></li>
+<li><a href="https://research-computing-cluster.readthedocs.io/en/latest/HowTo/batch_jobs.html" target="_blank">Submitting Batch Jobs</a></li>
 </ul>
 <h2 is-upgraded><strong>What you will need</strong></h2>
 <ul>
 <li><a href="https://gsuite.google.com/" target="_blank">GSuite</a>, <a href="https://cloud.google.com/identity" target="_blank">Cloud Identity</a>, or <a href="https://www.google.com/gmail/" target="_blank">Gmail Account</a> with <a href="https://cloud.google.com/compute/docs/instances/managing-instance-access#add_oslogin_keys" target="_blank">an SSH key attached</a></li>
 <li><a href="https://cloud.google.com/resource-manager/docs/creating-managing-projects" target="_blank">Google Cloud Platform Project with Billing enabled</a></li>
 <li>Project owner role on your GCP Project</li>
-<li><a href="https://cloud.google.com/compute/quotas" target="_blank">Sufficient Compute Engine Quota</a> (24 vCPUs and 100 GB PD-Standard Disk)</li>
+<li><a href="https://cloud.google.com/compute/quotas" target="_blank">Sufficient Compute Engine Quota</a> (24 c2d  vCPUs and 100 GB PD-Standard Disk)</li>
+<li><a href="https://paraview.org" target="_blank">Paraview 5.10.0</a> installed on your local workstation</li>
 </ul>
 
 
       </google-codelab-step>
     
-      <google-codelab-step label="Configure IAM" duration="5">
-        <h2 is-upgraded>Set IAM Policies</h2>
-<p>In HPC, there are clear distinctions between system administrators and system users. System administrators generally have &#34;root access&#34; enabling them to manage and operate compute resources. System users are generally researchers, scientists, and application engineers that only need to leverage the resources to execute jobs.</p>
-<p>On Google Cloud Platform, the <a href="https://cloud.google.com/compute/docs/oslogin/" target="_blank">OS Login API</a> provisions POSIX user information from GSuite, Cloud Identity, and Gmail accounts. Additionally, OS Login integrates with GCP&#39;s <a href="https://cloud.google.com/iam" target="_blank">Identity and Access Management (IAM)</a> system to determine if users should be allowed to escalate privileges on Linux systems.</p>
-<p>In this tutorial, we assume you are filling the system administrator and compute engine administrator roles. We will configure IAM policies to give you sufficient permissions to accomplish the following tasks </p>
-<ul>
-<li>Create/Delete Google Compute Engine (GCE) VM instances</li>
-<li>SSH into GCE VM instances</li>
-<li>Escalate privileges on GCE VM instances</li>
-</ul>
-<p class="image-container"><img style="width: 516.50px" src="img/74e3b6764c32a120.png"></p>
-<p>To give yourself the necessary IAM roles to complete this tutorial</p>
+      <google-codelab-step label="Deploy an auto-scaling research computing cluster with Terraform" duration="5">
+        <p>In this section, you will deploy an auto-scaling research computing cluster that includes the Slurm job scheduler, OpenFOAM®, and Paraview. </p>
 <ol type="1" start="1">
-<li>Navigate to IAM &amp; Admin &gt; IAM in the Products and Services menu. </li>
-<li>Click &#34;+Add&#34; near the top of the page. </li>
-<li>Type in your GSuite account, Cloud Identity Account, or Gmail account under &#34;Members&#34;</li>
+<li><a href="https://shell.cloud.google.com?show=terminal" target="_blank">Open your Cloud Shell on Google Cloud.</a></li>
+<li>Set your Google Cloud project, replacing [PROJECT-ID] with your Google Cloud project ID.</li>
 </ol>
-<ol type="1" start="1">
-<li>Add the following roles :  Compute Admin, Compute OS Admin Login, and Service Account User</li>
-</ol>
-<ol type="1" start="4">
-<li>Click Save</li>
-</ol>
-<aside class="warning"><p><strong>Caution:</strong> If you plan to use third-party SSH (e.g. OpenSSH) to connect to your cluster, be sure you attach an ssh key to your cloud identity profile using OS Login. You can find more information at <a href="https://cloud.google.com/compute/docs/instances/managing-instance-access#add_oslogin_keys" target="_blank">https://cloud.google.com/compute/docs/instances/managing-instance-access#add_oslogin_keys</a> </p>
-</aside>
-
-
-      </google-codelab-step>
-    
-      <google-codelab-step label="Deploy Cloud CFD from the GCP Marketplace" duration="5">
-        <p>In this section, you will deploy the Cloud CFD solution, an auto-scaling HPC cluster with the Slurm job scheduler and software that supports computational fluid dynamics workflows, including OpenFOAM®.</p>
-<ol type="1" start="1">
-<li>Open <a href="https://console.cloud.google.com/marketplace/details/fluid-cluster-ops/cloud-cfd" target="_blank">https://console.cloud.google.com/marketplace/details/fluid-cluster-ops/cloud-cfd</a>.</li>
-<li>Click &#34;Launch&#34;</li>
-<li>Give the deployment a name (e.g. OpenFOAM®-demo) and select the GCP zone where you want to deploy your cluster.<br><br>https://console.cloud.google.com/marketplace/details/fluid-cluster-ops/cloud-cfd<img style="width: 569.00px" src="img/91a06352d1dd7696.png"></li>
-<li>Leave the Controller and Login settings at their default settings.<img style="width: 579.00px" src="img/b9abb8d65ebc1196.png"></li>
-<li>In the Partition Configuration section, set the OpenFOAM® Machine Type to `n1-standard-8`.<img style="width: 576.00px" src="img/8612ecbff2d280ed.png"></li>
-<li>Click &#34;Deploy&#34; and wait for the cluster to be created.</li>
-</ol>
-
-
-      </google-codelab-step>
-    
-      <google-codelab-step label="Configure Slurm Accounting" duration="5">
-        <p>In this section, we will access the cluster&#39;s login node to configure Slurm accounting, so that you can submit jobs using the Slurm job scheduler.</p>
-<ol type="1" start="1">
-<li>SSH into the cluster&#39;s login node</li>
-<li>Go root</li>
-</ol>
-<pre><code>sudo su</code></pre>
+<pre>gcloud config set project [PROJECT-ID]</pre>
 <ol type="1" start="3">
-<li>Create a cluster-configuration file using cluster-services.</li>
+<li>Clone the research-computing-cluster repository from Fluid Numerics. This repository hosts example Terraform deployments for RCC solutions.</li>
 </ol>
-<pre><code>cluster-services list all &gt; config.yaml</code></pre>
+<pre>cd ~
+git clone https://github.com/FluidNumerics/research-computing-cluster.git ~/research-computing-cluster</pre>
 <ol type="1" start="4">
-<li>Append a sample slurm_accounts block to the end of the <code>config.yaml</code> file. </li>
+<li>Change to the <code>tf/rcc-cfd</code> directory:</li>
 </ol>
-<pre><code>cluster-services sample slurm_accounts &gt;&gt; config.yaml</code></pre>
+<pre>cd  ~/research-computing-cluster/tf/rcc-cfd</pre>
 <ol type="1" start="5">
-<li>Edit the cluster-configuration file so that you are allowed to submit to the <code>openfoam</code> partition. Make sure you remove the empty <code>slurm_accounts: []</code> that is pre-populated in the cluster-configuration file.<br>The example <code>slurm_account</code> configuration below will create a Slurm account called <code>cfd</code> with the user <code>joe</code> added to it. Users in this account will be allowed to submit jobs to the <code>meshing</code>, <code>openfoam</code>, and <code>paraview</code> partitions.</li>
+<li>Create and review a terraform plan. Set the environment variables <code>RCC_NAME</code>, <code>RCC_PROJECT</code>, and <code>RCC_ZONE</code> to specify the name of your cluster, your GCP project, and the zone you want to deploy to.</li>
 </ol>
-<pre><code>slurm_accounts:
-- allowed_partitions:
-  - meshing
-  - openfoam
-  - paraview
-  name: cfd
-  users:
-  - joe</code></pre>
+<pre>export RCC_PROJECT=&lt;PROJECT ID&gt;
+export RCC_ZONE=&lt;ZONE&gt; 
+export RCC_NAME=&#34;cfd-demo&#34; </pre>
+<aside class="warning"><p><strong>Important:</strong> You will want to deploy the cluster to <a href="https://cloud.google.com/compute/docs/regions-zones" target="_blank">a zone that hosts c2d instances</a>. A few options are us-central1-a, us-central1-c, us-central1-f, europe-west4-c. You can find a more complete list at <a href="https://cloud.google.com/compute/docs/regions-zones" target="_blank">Google Cloud&#39;s Regions and Zones documentation</a>.</p>
+</aside>
 <ol type="1" start="6">
-<li>Preview the changes for updating the <code>slurm_accounts</code>. Verify that you have entered in the Slurm accounting information correctly.</li>
+<li>Create the plan with the make command. The provided Makefile will concretize the basic.tfvars.tmpl file to create basic.tfvars; this is a Terraform HCL file that defines the attributes of your RCC cluster. Additionally, the make plan directive will initialize terraform and create a deployment plan for you to review.</li>
 </ol>
-<pre><code>cluster-services update slurm_accounts --config=config.yaml --preview</code></pre>
+<pre>make plan</pre>
+<aside class="special"><p><strong>Note:</strong> The Makefile provides detailed commands that are used to concretize your deployment, create a Terraform plan, deploy resources, and delete resources.</p>
+</aside>
+<aside class="special"><p><strong>Note:</strong> For better file IO performance over NFS, increase the controller disk size to 2.5 TB and change the controller_disk_type to pd-ssd. You can change the disk size by editing basic.tfvars.tmpl and adding <code>controller_disk_size_gb = 2500</code>. <br>Alternatively, a <a href="https://github.com/FluidNumerics/lustre-gcp_terraform" target="_blank">Lustre file system</a> is recommended.</p>
+</aside>
 <ol type="1" start="7">
-<li>Apply the changes.</li>
+<li>Deploy the cluster. The setup process can take up to 5 minutes.</li>
 </ol>
-<pre><code>cluster-services update slurm_accounts --config=config.yaml </code></pre>
+<pre>make apply</pre>
 <ol type="1" start="8">
-<li>Exit from root.</li>
+<li>SSH to the <em>login</em> node created in the previous step. You can see this node in the previous step (probably called <em>cfd-demo-login0</em>)<em>. </em>You can do this by clicking on the SSH button next to the list of VM Instances in the console menu item <em>Compute Engine -&gt; VM instance.<br></em><strong>Option:</strong> This pair of gcloud commands will figure out the login node name and SSH into it:</li>
 </ol>
-<pre><code>exit</code></pre>
+<pre>export CLUSTER_LOGIN_NODE=$(gcloud compute instances list --filter=&#34;name ~ .*login.*&#34; --format=&#34;value(name)&#34; | head -n1)
+gcloud compute ssh ${CLUSTER_LOGIN_NODE} --zone ${RCC_ZONE}</pre>
+<ol type="1" start="9">
+<li>Once you are connected to the login node, to verify your cluster setup, check that OpenFOAM is available.</li>
+</ol>
+<pre>$ spack find openfoam-org
+==&gt; In environment /opt/spack-pkg-env
+==&gt; Root specs
+-- linux-None-x86_64 / gcc@10.3.0 -------------------------------
+openfoam-org@8%gcc@10.3.0 +metis
+
+==&gt; 1 installed package
+-- linux-centos7-x86_64 / gcc@10.3.0 ----------------------------
+openfoam-org@8</pre>
+<ol type="1" start="10">
+<li>Run sinfo to list the available partitions. You should see four partitions, like what is shown below.</li>
+</ol>
+<pre>$  sinfo
+PARTITION        AVAIL  TIMELIMIT  NODES  STATE NODELIST
+c2d-standard-8*     up   infinite     25  idle~ cfd-demo-compute-0-[0-24]
+c2-standard-8       up   infinite     25  idle~ cfd-demo-compute-1-[0-24]
+c2-standard-60      up   infinite     25  idle~ cfd-demo-compute-2-[0-24]
+c2d-standard-112    up   infinite     25  idle~ cfd-demo-compute-3-[0-24]</pre>
+<p>The deployment you have just created consists of a login node, controller, networking, and firewall rules that will help you run OpenFOAM® and work with Paraview in a client-server configuration. The compute partitions provide you with the AMD Epyc Milan CPU platform (c2d-standard-8 &amp; c2d-standard-112) and the Intel Cascadelake (c2-standard-8 &amp; c2-standard-60) CPU platform. </p>
+<p>The c2d partitions deploy compute instances with a zen3 optimized OpenFOAM installation. The c2 partitions deploy compute instances with a cascadelake optimized OpenFOAM installation. When running the benchmarks in this codelab, we will provide instructions for running on the c2d instances, but we encourage you to experiment with running the same benchmark on the two different CPU platforms to get a feel for the difference in performance when running on different platforms.</p>
 
 
       </google-codelab-step>
     
-      <google-codelab-step label="Run the NACA0012 Example" duration="5">
-        <p>In this section, you will submit a Slurm batch job to run the NACA0012 tutorial included with OpenFOAM®. To help you with this, the Cloud CFD solution comes with an example Slurm batch script (<code>/apps/share/openfoam.slurm</code>). This example batch script can also be used as a starting point for other OpenFOAM® jobs on the cluster.</p>
+      <google-codelab-step label="Run the NACA0012 Example" duration="10">
+        <p>In this section, you will submit a Slurm batch job to run the NACA0012 tutorial included with OpenFOAM®. To help you with this, the RCC-CFD solution comes with an example Slurm batch script (<code>/opt/share/openfoam.naca0012.sh</code>). </p>
+<p>This example batch script can also be used as a starting point for other OpenFOAM® jobs on the cluster. This script executes pre-processing steps to set up the NACA0012 Aerofoil demonstration and then runs the NACA0012 demo in parallel using MPI and the <code>rhoSimpleFoam</code> solver. </p>
 <ol type="1" start="1">
 <li>From the cluster&#39;s login node, copy the example Slurm batch script to your home directory.</li>
 </ol>
-<pre><code>cp /apps/share/openfoam.slurm ./</code></pre>
+<pre><code>cp /opt/share/openfoam.naca0012.sh ./</code></pre>
 <ol type="1" start="2">
-<li>Open the Slurm batch script in a text editor. Set the <code>--account</code> parameter to the Slurm account name that you set in step 5 from the previous section of this codelab. Save the file when you are done and exit the text editor.</li>
+<li>Submit the batch job using sbatch. </li>
 </ol>
-<pre><code>#SBATCH --account=cfd</code></pre>
-<ol type="1" start="3">
-<li>Submit the batch job using sbatch.</li>
-</ol>
-<pre><code>sbatch openfoam.slurm</code></pre>
-<ol type="1" start="4">
-<li>Wait for the job to complete.<br></li>
-</ol>
+<pre><code>sbatch --partition=c2d-standard-8 --ntasks=8 --mem=5G --cpus-per-task=1 openfoam.naca0012.sh</code></pre>
+<p><br>When submitting the job, you can control which partition is used with the <code>--partition</code> flag. In this example, we use the <code>c2d-standard-8</code> partition to run on the AMD Epyc Milan instances. <br><br>The number of MPI tasks to use to run the job is controlled by the <code>--ntasks</code> flag, which is set to 8 in this example. In the <code>openfoam.naca0012.sh</code> script, you&#39;ll notice that mpirun is launched using <code>-np ${SLURM_NTASKS}</code>, so that the number of Slurm tasks is mapped to the number of MPI processes used to run rhoSimpleFoam.<br><br>We set the amount of memory required for the simulation to <code>5G</code> using the <code>--mem</code> flag, as this demo requires at most 5GB of memory. While this flag is not required, specifying the amount of memory required for a simulation is good practice as it can help you further right-size instances for your simulations.<br><br>Last, we set the number of vCPU per MPI rank using the <code>--cpus-per-task</code> flag, which we&#39;ve set to 1. In this case, each MPI rank is given a single vCPU so that the simulation runs on a single c2d-standard-8 instance.<br></p>
+<p>After you&#39;ve submitted the job, you can wait for the job to complete. If you run squeue, you can monitor the status of your job. The job status codes below will help you better understand what is happening during the lifetime of your job:<br></p>
+<ul>
+<li><code>CF</code> - The compute instance is in a &#34;configuring&#34; stage. When a node is marked as <code>CF</code>, Slurm is actively provisioning the compute node and is waiting for a connection between slurmctld on the controller and slurmd on the compute node.<br></li>
+<li><code>R</code> - The compute instance is actively running your job.<br></li>
+<li><code>CG</code> - The job is in a completing stage. At this point, your job is finished and Slurm is working on resetting the node status to idle so that it can receive more work, if scheduled.<br></li>
+</ul>
 <aside class="special"><p><strong>Note:</strong> Compute nodes are created as needed when jobs are submitted. For this first job submission, it can take up to 3 minutes for the job to start.</p>
 </aside>
-<p>When the job completes, you will have the <code>aerofoilNACA0012</code> OpenFOAM® simulation case directory in your home directory.</p>
-<pre><code>ls aerofoilNACA0012/
+<p>When the job completes, you will have the <code>aerofoilNACA0012</code> OpenFOAM® simulation case directory in your home directory and the contents should look similar to what is shown below.</p>
+<pre><code>$ ls aerofoilNACA0012/
 0     1050  1200  1350  150  300  450  550  700  850  Allclean  dynamicCode      log.transformPoints  processor1  processor4  processor7
 100   1100  1250  1400  200  350  50   600  750  900  Allrun    log.blockMesh    postProcessing       processor2  processor5  system
 1000  1150  1300  1410  250  400  500  650  800  950  constant  log.extrudeMesh  processor0           processor3  processor6</code></pre>
@@ -162,17 +154,73 @@
 
       </google-codelab-step>
     
-      <google-codelab-step label="Congratulations" duration="0">
-        <p>In this codelab, you created an auto-scaling, cloud-native HPC cluster and ran a parallel OpenFOAM® simulation on Google Cloud Platform!</p>
-<h2 is-upgraded><strong>Further reading</strong></h2>
+      <google-codelab-step label="Connect your Paraview Client to Paraview Server" duration="10">
+        <aside class="warning"><p><strong>Important:</strong> To complete this section, you will need to have <strong>Paraview 5.10.0</strong> installed on your local workstation. Additionally, you will need to have an ssh key on your local workstation aligned with your Google Cloud Identity or Gmail account using OS Login.</p>
+</aside>
+<p>In this section, you will use Paraview on your local workstation to connect to paraview server, deployed to compute nodes on  your cluster. You will need to know your login node&#39;s external IP address and your POSIX account username, assigned by OS Login, to complete this section.</p>
+<p>To find your login node&#39;s external IP address, you can use the following command. The <code>EXTERNAL_IP</code> field for the login node is what you will need.</p>
+<pre>$ gcloud compute instances list --project=[PROJECT-ID]
+NAME: cfd-demo-controller
+ZONE: us-central1-a
+MACHINE_TYPE: n1-standard-4
+PREEMPTIBLE: 
+INTERNAL_IP: 10.0.0.3
+EXTERNAL_IP: 
+STATUS: RUNNING
+
+NAME: cfd-demo-login0
+ZONE: us-central1-a
+MACHINE_TYPE: n1-standard-4
+PREEMPTIBLE: 
+INTERNAL_IP: 10.0.0.2
+EXTERNAL_IP: 34.133.152.139
+STATUS: RUNNING</pre>
+<p>To find your POSIX account username that is assigned by OS Login, you can run the following command : </p>
+<pre>gcloud compute os-login describe-profile | grep username</pre>
+<p>To connect your local paraview client to a paraview server running on your cluster on Google Cloud, you will use a Paraview PVSC file that Fluid Numerics has developed. The PVSC file defines the steps to launch paraview server remotely on compute nodes in your cluster and set up a reverse SSH connection from the compute nodes back to the login node and ultimately to your local workstation. This configuration pushes rendering tasks to run on Google Cloud while the resulting graphics are sent back to your local paraview client for rendering. </p>
+<ol type="1" start="1">
+<li>On your local workstation, make a directory called <code>paraview-pvsc/</code></li>
+</ol>
+<pre><code>mkdir ~/paraview-pvsc</code></pre>
+<ol type="1" start="2">
+<li>Copy the <code>paraview-gcp.pvsc</code> file from your login node to <code>paraview-pvsc/</code></li>
+</ol>
+<pre><code>scp USERNAME@LOGIN-IP:/opt/share/paraview-gcp.pvsc ~/paraview-pvsc/</code></pre>
+<ol type="1" start="3">
+<li>Start paraview from your terminal on your workstation.</li>
+</ol>
+<pre><code>paraview &amp;</code></pre>
+<ol type="1" start="4">
+<li>Click on the &#34;Connect to Server&#34; icon in the toolbar. This is the third icon from the left, near the open file icon.<img style="width: 568.00px" src="img/f4fa271fa573a6e5.png"></li>
+<li>On the dialog that appears, click on Load Servers.<img style="width: 542.00px" src="img/7dbb4e0ccc086c5.png"></li>
+<li>Navigate to the paraview-gcp.pvsc file that you&#39;ve copied from the cluster and click Open. <img style="width: 543.00px" src="img/e5c2d2ff7a3f5ee1.png"></li>
+<li>Click Connect.</li>
+<li>Fill out the form that appears, using settings that are consistent with your cluster and your firewall rule settings. <br><br>SSH username is your username provided by OS Login<br>Login Node IP Address is the login node&#39;s external IP address that you found previously<br>The Slurm partition should be set to c2d-standard-8, number of processes set to 8, memory (GB) per mpi-task is 1, and the number of hours to reserve is 1.</li>
+</ol>
+<p class="image-container"><img style="width: 540.97px" src="img/e9aadc5cd25fbdde.png"></p>
+<ol type="1" start="9">
+<li>Click Ok.</li>
+</ol>
+<p>From here, your paraview client will launch an Xterm window. <img style="width: 515.00px" src="img/c5e47f9dd130f6e3.png"></p>
+<p>Within this window, a series of commands are run automatically for you.</p>
 <ul>
-<li><a href="https://fluid-slurm-gcp-codelabs.web.app/connect-to-paraview-server-on-gcp-with-cloud-cfd/index.html#0" target="_blank">Learn how to connect your Cloud CFD cluster to your local Paraview client for post-processing and data visualization.</a></li>
-<li><a href="http://codelabs.fluidnumerics.com/create-a-high-availability-compute-partition" target="_blank">Learn how to configure a high availability compute partition (multi-zone)</a></li>
-<li><a href="http://codelabs.fluidnumerics.com/create-a-globally-scalable-compute-partition" target="_blank">Learn how to configure a globally scalable compute partition (multi-region)</a></li>
-<li><a href="https://cloud.google.com/compute/docs/instances/managing-instance-access" target="_blank">Learn how to configure OS-Login to ssh to your cluster with 3rd party ssh tools</a></li>
-<li><a href="https://cloud.google.com/compute/docs/oslogin/manage-oslogin-in-an-org" target="_blank">Learn how to manage POSIX user information with the directory API</a></li>
-<li><a href="https://help.fluidnumerics.com/cfd-gcp" target="_blank">https://help.fluidnumerics.com/Cloud CFD</a></li>
+<li>An SSH tunnel is opened with your RCC-CFD cluster&#39;s login node over the specified tcp port</li>
+<li>The /opt/share/submit-paraview.sh script is executed on the login to submit a batch job.</li>
+<li>The instructions in the batch job will launch Paraview server with the desired number of MPI ranks and create a reverse TCP connection back to the login node over the same port.</li>
 </ul>
+<p>Additionally, you will be able to monitor the status of the node configuration.</p>
+<p>Once the job starts and the Paraview server is connected, you will be able to open files in your Paraview client that are located on your Cloud CFD cluster.</p>
+<aside class="special"><p><strong>Tip: </strong>In Paraview, open the memory inspector by clicking through View &gt; Memory Inspector. When you&#39;ve been connected to the cluster, you will be able to see your compute node resources appear in the memory inspector dashboard.<img style="width: 545.93px" src="img/3a2322b975fbe61e.png"></p>
+</aside>
+<aside class="special"><p><strong>Tip: </strong>To disconnect from the cluster, click the Disconnect icon (to the right of the &#34;Connect&#34; icon) in the Paraview toolbar. When you disconnect, the Slurm job will automatically be stopped, and the compute node will be deprovisioned for you after 5 minutes of idle time.</p>
+</aside>
+<p>Once connected, you can open <code>aerofoilNACA0012/naca0012.foam</code> on the cluster to visualize the OpenFOAM output.</p>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Congratulations" duration="0">
+        <p>In this codelab, you created an auto-scaling, cloud-native HPC cluster and ran a parallel OpenFOAM® simulation on Google Cloud Platform. You also learned how to connect paraview server, running in Google Cloud, to your local Paraview client to assist with data visualization and post-processing.</p>
 <h2 is-upgraded><a href="https://docs.google.com/forms/d/e/1FAIpQLSd7EN_ptBOJ9Eg2vH-Bs95j8pD2sjaTAwdcLoWDBVmF0fVEfg/viewform?usp=sf_link" target="_blank">Tell us your feedback</a></h2>
 
 
