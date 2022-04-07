@@ -8,6 +8,7 @@ The RCC is a highly flexible auto-scaling Slurm based cluster on Google Cloud th
 
 
 * [Run the WRF Weather Forecasting Model with the RCC](https://fluidnumerics.github.io/rcc-codelabs/rcc/wrf-on-rcc)
+* [Get Started with Continuous Benchmarking using RCC-Run](https://fluidnumerics.github.io/rcc-codelabs/rcc-run/continuous-benchmarking-intro)
 * (Coming Soon) Create a Research Computing Cluster on Google Cloud
 
 ## Fluid-Slurm-GCP
