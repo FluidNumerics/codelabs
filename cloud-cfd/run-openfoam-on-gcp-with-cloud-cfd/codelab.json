@@ -3,7 +3,7 @@
   "format": "html",
   "prefix": "https://storage.googleapis.com",
   "mainga": "UA-49880327-14",
-  "updated": "2022-03-16T01:38:30Z",
+  "updated": "2022-03-16T01:40:37Z",
   "id": "cloud-cfd/run-openfoam-on-gcp-with-cloud-cfd",
   "duration": 25,
   "title": "Run the NACA0012 Aerofoil OpenFOAM® Benchmark on Google Cloud",

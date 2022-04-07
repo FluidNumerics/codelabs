@@ -1,0 +1,26 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2022-04-07T03:24:57Z",
+  "id": "rcc-run/continuous-benchmarking-intro",
+  "duration": 105,
+  "title": "Get Started with Continuous Benchmarking using RCC-Run",
+  "authors": "Joseph Schoonover",
+  "summary": "This codelab will walk you through the basics of setting up continuous integration and continuous benchmarking for a compiled language (C/C++/Fortran) application using a Fortran mini-app as an example.",
+  "source": "1a_6Q5Tr1Vk4bfs5msvTezHJbCfUCQ8fWaDbH9YYA_dA",
+  "theme": "hpc",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "HPC"
+  ],
+  "tags": [
+    "web"
+  ],
+  "feedback": "https://octoskelo.atlassian.net/servicedesk/customer/portal/1/create/140",
+  "ga": "TO DO",
+  "url": "rcc-run/continuous-benchmarking-intro"
+}
