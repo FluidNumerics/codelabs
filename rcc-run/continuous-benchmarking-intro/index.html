@@ -265,7 +265,7 @@ singularity exec $SINGULARITY_IMAGE smoother 1000 1000 100</pre>
 <li>Open a new file in a text editor (e.g. vim or nano) under the <code>ci/</code> directory called <code>rcc-run.yaml</code> and add the following :</li>
 </ol>
 <pre>tests:
-- command_group: &#34;smoother_1000_1000_100&#34;
+- command_group: &#34;smoother_c2&#34;
   execution_command: &#34;ci/singularity_exec.sh&#34;
   output_directory: &#34;smoother_c2&#34;
   partition: &#34;c2-standard-8&#34;
@@ -432,8 +432,24 @@ singularity exec $SINGULARITY_IMAGE smoother 1000 1000 100</pre>
   - &#39;--rcc-tfvars=ci/rcc.auto.tfvars&#39;
   - &#39;--ci-file=ci/rcc-run.yaml&#39;
   - &#39;--save-results&#39;</pre>
+<h2 is-upgraded><strong>Add another benchmark run to the RCC-Run configuration</strong></h2>
+<p>Now that you have the benchmarking cluster configured to expose another compute partition, the last step is to add another benchmark to the RCC-Run configuration.</p>
+<p>Open the ci/rcc-run.yaml configuration file in a text editor. Copy the first test and paste it below. Change the command_group to smoother_c2d and change the partition to c2d-standard-8. By assigning each test a unique command group, the tests can run simultaneously. The ci/rcc-run.yaml configuration file should look like this.</p>
+<pre>tests:
+- command_group: &#34;smoother_c2&#34;
+  execution_command: &#34;ci/singularity_exec.sh&#34;
+  output_directory: &#34;smoother_c2&#34;
+  partition: &#34;c2-standard-8&#34;
+  batch_options: &#34;-N1 --time=10:00 --exclusive&#34;
+
+- command_group: &#34;smoother_c2d&#34;
+  execution_command: &#34;ci/singularity_exec.sh&#34;
+  output_directory: &#34;smoother_c2d&#34;
+  partition: &#34;c2d-standard-8&#34;
+  batch_options: &#34;-N1 --time=10:00 --exclusive&#34;</pre>
 <p>To test that everything works, you can manually trigger the build while setting the zone to <code>us-central1-a</code>, which hosts both c2 and c2d instances.</p>
 <pre>gcloud builds submit . --config=ci/cloudbuild.yaml --substitutions=_ZONE=us-central1-a --async</pre>
+<p>Once the build is complete, you will be able to preview the data in your <a href="https://console.cloud.google.com/bigquery" target="_blank">rcc-apps BigQuery dataset</a>.</p>
 
 
       </google-codelab-step>
