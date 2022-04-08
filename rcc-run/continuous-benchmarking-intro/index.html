@@ -84,6 +84,9 @@ terraform plan -out=tfplan</pre>
 <li>All of the necessary IAM permissions for your Cloud Build service account</li>
 <li>BigQuery Data Set</li>
 </ul>
+<p>In some cases, we have found that the Compute Engine service account is created but is not enabled. To be certain the Compute Engine service account is enabled, you are encouraged to also run the following commands : </p>
+<pre>export SERVICE_ACCOUNT=$(gcloud iam service-accounts list --format=&#34;value(email)&#34; | grep compute)
+gcloud iam service-accounts enable ${SERVICE_ACCOUNT}</pre>
 <p>You can view your BigQuery data set by visiting <a href="https://console.cloud.google.com/bigquery" target="_blank">https://console.cloud.google.com/bigquery</a> and navigating to your project&#39;s &#34;rcc_run&#34; table.</p>
 
 
