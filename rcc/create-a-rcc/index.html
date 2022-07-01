@@ -1,0 +1,226 @@
+
+<!doctype html>
+
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
+  <meta name="theme-color" content="#4F7DC9">
+  <meta charset="UTF-8">
+  <title>Create a Research Computing Cluster on Google Cloud with Terraform</title>
+  <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Code+Pro:400|Roboto:400,300,400italic,500,700|Roboto+Mono">
+  <link rel="stylesheet" href="//fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://storage.googleapis.com/codelab-elements/codelab-elements.css">
+  <style>
+    .success {
+      color: #1e8e3e;
+    }
+    .error {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <google-codelab-analytics gaid="UA-49880327-14"></google-codelab-analytics>
+  <google-codelab codelab-gaid=""
+                  id="rcc/create-a-rcc"
+                  title="Create a Research Computing Cluster on Google Cloud with Terraform"
+                  environment="web"
+                  feedback-link="">
+    
+      <google-codelab-step label="Introduction" duration="0">
+        <p><strong>Last Updated:</strong> 2022-07-01</p>
+<h2 is-upgraded>What you will build</h2>
+<p>In this codelab, you are going to deploy an auto-scaling High Performance Computing (HPC) cluster on Google Cloud with the Slurm job scheduler. You will use an example Terraform deployment that deploys this cluster using your choice of operating system</p>
+<h2 is-upgraded><strong>What you will learn</strong></h2>
+<ul>
+<li>How to deploy a cloud-native HPC cluster with the Slurm job scheduler</li>
+<li>How to run containers through interactive and batch jobs using Singularity and Slurm.</li>
+</ul>
+<h2 is-upgraded><strong>What you will need</strong></h2>
+<ul>
+<li><a href="https://www.google.com/gmail/" target="_blank">Gmail Account</a> with <a href="https://cloud.google.com/compute/docs/instances/managing-instance-access#add_oslogin_keys" target="_blank">an SSH key attached</a>, or <a href="https://gsuite.google.com/" target="_blank">Google Workspace</a>, <a href="https://cloud.google.com/identity" target="_blank">Cloud Identity</a></li>
+<li><a href="https://cloud.google.com/resource-manager/docs/creating-managing-projects" target="_blank">Google Cloud Platform Project with Billing enabled</a></li>
+<li>Project owner role on your GCP Project</li>
+<li><a href="https://cloud.google.com/compute/quotas" target="_blank">Sufficient Compute Engine Quota</a> (480 c2 vCPUs and 500 GB PD-Standard Disk)</li>
+<li>RCC-WRF Deployment</li>
+</ul>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Deploy an auto-scaling HPC cluster with Terraform" duration="5">
+        <p>In this section, you will deploy an auto-scaling HPC cluster including the Slurm job scheduler.  </p>
+<aside class="warning"><p><strong>Important:</strong> The default quota for most CPU types on a new project is typically 24 vCPUs.</p>
+</aside>
+<ol type="1" start="1">
+<li><a href="https://console.cloud.google.com/?cloudshell=true" target="_blank">Open your Cloud Shell on GCP.</a></li>
+<li>Clone the Research Computing Cloud Applications repository from Fluid Numerics</li>
+</ol>
+<pre>cd ~
+git clone https://github.com/FluidNumerics/research-computing-cluster.git</pre>
+<ol type="1" start="3">
+<li>Change to the <code>tf/rcc-centos</code> directory</li>
+</ol>
+<pre>cd  ~/research-computing-cluster/tf/rcc-centos</pre>
+<ol type="1" start="4">
+<li>Create and review a terraform plan. Set the environment variables <code>RCC_NAME</code>, <code>RCC_PROJECT</code>, and <code>RCC_ZONE</code> to specify the name of your cluster, your GCP project, and the zone you want to deploy to.</li>
+</ol>
+<pre>export RCC_PROJECT=&lt;PROJECT ID&gt;
+export RCC_ZONE=&lt;ZONE&gt; 
+export RCC_NAME=&#34;rcc-demo&#34; </pre>
+<ol type="1" start="5">
+<li>The first time you run terraform you must run the `init` command:</li>
+</ol>
+<pre>terraform init</pre>
+<ol type="1" start="6">
+<li>Create the plan with the make command, which will run `terraform`</li>
+</ol>
+<pre>make plan</pre>
+<aside class="special"><p><strong>Note:</strong> The Makefile provides detailed commands that are used to concretize your deployment, create a Terraform plan, deploy resources, and delete resources.</p>
+</aside>
+<aside class="warning"><p><strong>Caution:</strong> When choosing a zone, make sure that you select a zone where C2 instances are available. <a href="https://cloud.google.com/compute/docs/regions-zones#available" target="_blank">Learn more about available regions and zones</a>.</p>
+<p>To get more information about the quota limitations on your project, the <a href="https://console.cloud.google.com/iam-admin/quotas?_ga=2.107694530.1745805448.1619444101-1941436744.1612364381&_gac=1.50247380.1618854421.Cj0KCQjw1PSDBhDbARIsAPeTqrfYD6ZIHQpVL-3eMPw2tP3QsSlEzCVxzX30bSM06M0UF59C_3QGBccaAsjDEALw_wcB" target="_blank">Quotas</a> page in the Google Cloud Console lists all the quotas. Search for &#34;Limit Name: C2 CPUs&#34;. This will display the available C2 CPUs in your selected zone.</p>
+</aside>
+<ol type="1" start="7">
+<li>Deploy the cluster. The setup process can take up to 5 minutes.</li>
+</ol>
+<pre>make apply</pre>
+<ol type="1" start="8">
+<li>SSH to the <em>login</em> node created in the previous step. You can see this node in the previous step (probably called <em>rcc-demo-login0</em>)<em>. </em>You can do this by clicking on the SSH button next to the list of VM Instances in the console menu item <em>Compute Engine -&gt; VM instance.</em></li>
+</ol>
+<p><strong>Option:</strong> This pair of gcloud commands will figure out the login node name and SSH into it:</p>
+<pre>export CLUSTER_LOGIN_NODE=$(gcloud compute instances list --zones ${RCC_ZONE} --filter=&#34;name ~ .*login&#34; --format=&#34;value(name)&#34; | head -n1)
+gcloud compute ssh ${CLUSTER_LOGIN_NODE} --zone ${RCC_ZONE}</pre>
+<ol type="1" start="9">
+<li>Once you are connected to the login node, to verify your cluster setup, check that the Slurm compute partitions and the Singularity package are available </li>
+</ol>
+<pre>$ sinfo
+PARTITION       AVAIL  TIMELIMIT  NODES  STATE NODELIST
+c2-standard-8*    up   infinite     25  idle~ rcc-demo-compute-0-[0-24]
+
+$ spack find singularity
+==&gt; 1 installed package
+-- linux-centos7-x86_64 / gcc@9.4.0 -----------------------------
+singularity@3.7.4
+</pre>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Run a Docker Container using Singularity in interactive mode" duration="5">
+        <p>In this section, you will download a publicly available docker container using Singularity, a container platform for HPC systems. You will start an interactive session on a compute node and run a task within a Singularity container on the compute node.</p>
+<p>For this section, you must be SSH connected to the <em>login</em> node of the cluster</p>
+<ol type="1" start="1">
+<li>First, we will download the cowsay docker image using singularity. The resulting image will be saved as a Singularity Image File called <code>cowsay_latest.sif</code> .</li>
+</ol>
+<pre>spack load singularity
+singularity pull docker://grycap/cowsay</pre>
+<ol type="1" start="2">
+<li>Start an interactive session on a compute node using Slurm&#39;s <code>srun</code> command</li>
+</ol>
+<pre>srun -n1 --pty /bin/bash</pre>
+<aside class="special"><p><strong>Note:</strong> Compute nodes are created as needed when jobs are submitted. For this first job submission, it can take up to 3 minutes for the job to start.</p>
+</aside>
+<ol type="1" start="3">
+<li>Once you are on a compute node, load the singularity package to your path using spack.</li>
+<li>Next, you can start a Singularity container using the Singularity image and execute command within the container. In this example, we will run the <code>cowsay</code> command.</li>
+</ol>
+<pre>singularity exec cowsay_latests.sif /usr/games/cowsay &#34;Hello World&#34;
+
+ _____________
+&lt; Hello World &gt;
+ -------------
+        \   ^__^
+         \  (oo)\_______
+            (__)\       )\/\
+                ||----w |
+                ||     ||
+</pre>
+<ol type="1" start="5">
+<li>To release the compute node and finish your interactive job, just type <code>exit</code> and hit Enter</li>
+</ol>
+<pre>exit</pre>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Run a Docker Container using Singularity in batch mode" duration="5">
+        <p>In this section, you will learn how to run a batch job using Slurm. Batch jobs are useful when you have long-running jobs that you want to &#34;set-and-forget&#34; or when you have sequences of jobs that have dependencies between them. Submitting a batch job requires that you write a script that contains the commands to be executed.</p>
+<p>For this section, you must be SSH connected to the <em>login</em> node of the cluster</p>
+<ol type="1" start="1">
+<li>First, we will create a bash script that will run the same commands as we did in the previous section. Open a text editor on the login node (e.g. vim or nano) to create a file with the contents shown below. Save the file as  <code>demo.sh</code> .</li>
+</ol>
+<pre>#!/bin/bash
+
+spack load singularity
+singularity exec cowsay_latest.sif /usr/games/cowsay &#34;Hello World&#34;</pre>
+<ol type="1" start="2">
+<li>Start the batch job on a compute node using Slurm&#39;s <code>sbatch</code> command. This process will create a compute node on your behalf, run the commands listed in the script, store the standard output and standard error in a file, and release the compute node.</li>
+</ol>
+<pre>sbatch -n1 demo.sh</pre>
+<aside class="special"><p><strong>Note:</strong> Compute nodes are created as needed when jobs are submitted. For this first job submission, it can take up to 3 minutes for the job to start.</p>
+</aside>
+<ol type="1" start="3">
+<li>You can monitor the status of your job using the squeue command. When your job is complete, there will be a file that is called <code>slurm-4.out</code> in your home directory. You can review the contents of this file to verify the job ran successfully.</li>
+</ol>
+<pre>$ squeue
+             JOBID PARTITION     NAME     USER ST       TIME  NODES NODELIST(REASON)
+                 4 c2-standa  demo.sh      joe CF       0:00      1 rcc-demo-compute-0-1
+
+$ squeue
+             JOBID PARTITION     NAME     USER ST       TIME  NODES NODELIST(REASON)
+
+$ cat slurm-4.out
+
+ _____________
+&lt; Hello World &gt;
+ -------------
+        \   ^__^
+         \  (oo)\_______
+            (__)\       )\/\
+                ||----w |
+                ||     ||</pre>
+
+
+      </google-codelab-step>
+    
+      <google-codelab-step label="Congratulations" duration="0">
+        <p>In this codelab, you created an auto-scaling, cloud-native HPC cluster and learned how deploy docker images to Singularity containers and run interactive and batch jobs using Slurm.</p>
+<h2 is-upgraded>Cleaning up</h2>
+<p>To avoid incurring charges to your Google Cloud Platform account for the resources used in this codelab:</p>
+<h3 is-upgraded>Delete the project</h3>
+<p>The easiest way to eliminate billing is to delete the project you created for the codelab.</p>
+<p><strong>Caution</strong>: Deleting a project has the following effects:</p>
+<ul>
+<li><strong>Everything in the project is deleted.</strong> If you used an existing project for this codelab, when you delete it, you also delete any other work you&#39;ve done in the project.</li>
+<li><strong>Custom project IDs are lost.</strong> When you created this project, you might have created a custom project ID that you want to use in the future. To preserve the URLs that use the project ID, such as an <strong>appspot.com</strong> URL, delete selected resources inside the project instead of deleting the whole project.</li>
+</ul>
+<p>If you plan to explore multiple codelabs and quickstarts, reusing projects can help you avoid exceeding project quota limits.</p>
+<ol type="1" start="1">
+<li>In the Cloud Console, go to the <strong>Manage resources</strong> page.<br><a href="https://console.cloud.google.com/iam-admin/projects" target="_blank">Go to the Manage resources page</a></li>
+<li>In the project list, select the project that you want to delete and then click <strong>Delete </strong><img style="width: 20.00px" src="img/c01e35138ac49503.png">.</li>
+<li>In the dialog, type the project ID and then click <strong>Shut down</strong> to delete the project.</li>
+</ol>
+<h3 is-upgraded>Delete the individual resources</h3>
+<ol type="1" start="1">
+<li><a href="https://console.cloud.google.com/?cloudshell=true" target="_blank">Open your cloud shell</a> and navigate to the wrf example directory</li>
+</ol>
+<pre><code>cd  ~/rcc-apps/wrf/tf</code></pre>
+<ol type="1" start="2">
+<li>Run make destroy to delete all of the resources.</li>
+</ol>
+<pre><code>make destroy</code></pre>
+
+
+      </google-codelab-step>
+    
+  </google-codelab>
+
+  <script src="https://storage.googleapis.com/codelab-elements/native-shim.js"></script>
+  <script src="https://storage.googleapis.com/codelab-elements/custom-elements.min.js"></script>
+  <script src="https://storage.googleapis.com/codelab-elements/prettify.js"></script>
+  <script src="https://storage.googleapis.com/codelab-elements/codelab-elements.js"></script>
+  <script src="//support.google.com/inapp/api.js"></script>
+
+</body>
+</html>

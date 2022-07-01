@@ -1,0 +1,24 @@
+{
+  "environment": "web",
+  "format": "html",
+  "prefix": "https://storage.googleapis.com",
+  "mainga": "UA-49880327-14",
+  "updated": "2022-07-01T21:05:14Z",
+  "id": "rcc/create-a-rcc",
+  "duration": 15,
+  "title": "Create a Research Computing Cluster on Google Cloud with Terraform",
+  "authors": "Joseph Schoonover",
+  "summary": "This codelab will walk you through the basics of using Terraform infrastructure-as-code to deploy your own Research Computing Cluster on Google Cloud.",
+  "source": "1chyhsSwOdz1fS4N7Vr8RJYfnuFagaX0gm6FfIk0crQQ",
+  "theme": "hpc",
+  "status": [
+    "draft"
+  ],
+  "category": [
+    "HPC"
+  ],
+  "tags": [
+    "web"
+  ],
+  "url": "rcc/create-a-rcc"
+}
